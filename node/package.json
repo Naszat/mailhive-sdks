@@ -1,0 +1,76 @@
+{
+  "name": "@mailhive/send",
+  "version": "0.1.0",
+  "description": "The official Node.js and TypeScript SDK for Mailhive Send: transactional email from Africa.",
+  "keywords": [
+    "mailhive",
+    "email",
+    "transactional-email",
+    "send",
+    "smtp",
+    "africa"
+  ],
+  "homepage": "https://mailhive.africa/docs/sdks/node",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Naszat/mailhive-sdks.git",
+    "directory": "node"
+  },
+  "bugs": "https://github.com/Naszat/mailhive-sdks/issues",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./nodemailer": {
+      "import": {
+        "types": "./dist/nodemailer.d.ts",
+        "default": "./dist/nodemailer.js"
+      },
+      "require": {
+        "types": "./dist/nodemailer.d.cts",
+        "default": "./dist/nodemailer.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.3"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "@types/nodemailer": "^8.0.2",
+    "nodemailer": "^10.0.12",
+    "tsup": "^8.5.0",
+    "typescript": "~5.7.2",
+    "vitest": "^4.1.10"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
