@@ -1,0 +1,931 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mailhive Send API",
+    "version": "1.0.0",
+    "description": "Send transactional email from your verified domains. Guides: https://mailhive.africa/docs",
+    "contact": {
+      "name": "Mailhive",
+      "url": "https://mailhive.africa/contact"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.mailhive.africa/v1"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "externalDocs": {
+    "description": "Mailhive Send API reference",
+    "url": "https://mailhive.africa/docs/api/overview"
+  },
+  "paths": {
+    "/send/emails": {
+      "post": {
+        "operationId": "sendEmail",
+        "summary": "Send an email",
+        "tags": [
+          "Emails"
+        ],
+        "externalDocs": {
+          "url": "https://mailhive.africa/docs/api/send-email"
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Repeating the same request with the same key within 24 hours returns the original response instead of sending again. The same key with a different request is a 409 idempotency_conflict.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptedEmail"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "403": {
+            "$ref": "#/components/responses/E403"
+          },
+          "409": {
+            "$ref": "#/components/responses/E409"
+          },
+          "422": {
+            "$ref": "#/components/responses/E422"
+          },
+          "429": {
+            "$ref": "#/components/responses/E429"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/send/emails/batch": {
+      "post": {
+        "operationId": "sendBatch",
+        "summary": "Send up to 100 emails",
+        "tags": [
+          "Emails"
+        ],
+        "externalDocs": {
+          "url": "https://mailhive.africa/docs/api/send-batch"
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Repeating the same request with the same key within 24 hours returns the original response instead of sending again. The same key with a different request is a 409 idempotency_conflict.",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendBatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AcceptedEmail"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "403": {
+            "$ref": "#/components/responses/E403"
+          },
+          "409": {
+            "$ref": "#/components/responses/E409"
+          },
+          "422": {
+            "$ref": "#/components/responses/E422"
+          },
+          "429": {
+            "$ref": "#/components/responses/E429"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/send/emails/{id}": {
+      "get": {
+        "operationId": "getEmail",
+        "summary": "Retrieve an email",
+        "tags": [
+          "Emails"
+        ],
+        "externalDocs": {
+          "url": "https://mailhive.africa/docs/api/get-email"
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Email"
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "404": {
+            "$ref": "#/components/responses/E404"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {
+    "emailEvent": {
+      "post": {
+        "summary": "An email event (Mailhive-Event header names it)",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmailEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Any 2xx within 10 seconds"
+          }
+        }
+      }
+    },
+    "contactUnsubscribed": {
+      "post": {
+        "summary": "contact.unsubscribed",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactUnsubscribedEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Any 2xx within 10 seconds"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A Mailhive Send API key (mhs_…)."
+      }
+    },
+    "schemas": {
+      "SendEmailRequest": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 3,
+            "title": "From",
+            "description": "Sender, at a verified sending domain: `hello@example.com` or `Acme <hello@example.com>`."
+          },
+          "to": {
+            "description": "One recipient, or a list. At most 50 recipients across to, cc and bcc.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "minItems": 1,
+                "title": "To"
+              }
+            ]
+          },
+          "cc": {
+            "description": "Copied recipients: one address or a list.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "title": "Cc"
+              }
+            ]
+          },
+          "bcc": {
+            "description": "Hidden recipients: one address or a list.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "title": "Bcc"
+              }
+            ]
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 998,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject",
+            "description": "Required unless template_id is given. Up to 998 characters."
+          },
+          "html": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html",
+            "description": "HTML body. html or text (or both) is required unless template_id is given."
+          },
+          "text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text",
+            "description": "Plain-text body."
+          },
+          "template_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 36
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Template Id",
+            "description": "A template's id. Use instead of subject, html and text."
+          },
+          "variables": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Variables",
+            "description": "Values for the template's variables."
+          },
+          "reply_to": {
+            "description": "Where replies go: one address or a list.",
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "title": "Reply To"
+              }
+            ]
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Headers",
+            "description": "Extra headers: names starting X-, or In-Reply-To, References, List-Unsubscribe, List-Unsubscribe-Post. No line breaks in values."
+          },
+          "tags": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Tags",
+            "description": "Up to 10 of your own labels (names up to 64 characters, values up to 256). Returned in webhook events."
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/Attachment"
+            },
+            "type": "array",
+            "title": "Attachments",
+            "description": "Files, up to 10 MB in total."
+          }
+        },
+        "type": "object",
+        "required": [
+          "from",
+          "to"
+        ],
+        "title": "SendEmailRequest"
+      },
+      "Attachment": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Filename",
+            "description": "Shown to the recipient."
+          },
+          "content": {
+            "type": "string",
+            "title": "Content",
+            "description": "The file, base64-encoded."
+          },
+          "content_type": {
+            "type": "string",
+            "maxLength": 255,
+            "title": "Content Type",
+            "default": "application/octet-stream"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "content"
+        ],
+        "title": "Attachment"
+      },
+      "SendBatchRequest": {
+        "properties": {
+          "emails": {
+            "items": {
+              "$ref": "#/components/schemas/SendEmailRequest"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Emails",
+            "description": "1 to 100 emails. All are sent, or none.",
+            "maxItems": 100
+          }
+        },
+        "type": "object",
+        "required": [
+          "emails"
+        ],
+        "title": "SendBatchRequest"
+      },
+      "AcceptedEmail": {
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "suppressed",
+          "test"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "suppressed"
+            ]
+          },
+          "suppressed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Recipients dropped because they're on the suppression list."
+          },
+          "test": {
+            "type": "boolean",
+            "description": "True when sent with a test key (mhs_test_…): delivery is simulated and nothing is billed."
+          }
+        }
+      },
+      "Email": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sent",
+              "delivered",
+              "delayed",
+              "bounced",
+              "complained",
+              "suppressed",
+              "failed"
+            ]
+          },
+          "stream": {
+            "type": "string",
+            "enum": [
+              "transactional",
+              "broadcast"
+            ]
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bcc": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subject": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "suppressed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "template_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "template_version": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "created_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "sent_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "last_event_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "test": {
+            "type": "boolean",
+            "description": "True when sent with a test key: delivery was simulated."
+          }
+        },
+        "required": [
+          "test"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Stable, machine-readable error code.",
+                "examples": [
+                  "domain_not_verified"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable explanation; may change."
+              },
+              "details": {
+                "description": "Extra information; for validation_error, a list of problems (type, loc, msg)."
+              },
+              "request_id": {
+                "type": "string",
+                "description": "Identifies this request (also in the X-Request-Id header). Quote it when contacting support.",
+                "examples": [
+                  "req_5f1c2c8e8a0e4c7b9f5e2d8f"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "EmailEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "created_at",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "email.sent",
+              "email.delivered",
+              "email.delivery_delayed",
+              "email.bounced",
+              "email.complained",
+              "email.opened",
+              "email.clicked"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "test": {
+            "type": "boolean",
+            "description": "Present and true on events that aren't real: test events sent from the dashboard, and events for mail sent with a test key."
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "email_id": {
+                "type": "string"
+              },
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "subject": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "tags": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "recipient": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "detail": {
+                "type": "object",
+                "description": "Bounces and delays: code, response, bounce_classification. Clicks: url.",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "ContactUnsubscribedEvent": {
+        "type": "object",
+        "required": [
+          "type",
+          "created_at",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "contact.unsubscribed"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string"
+              },
+              "contact_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "E401": {
+        "description": "invalid_api_key",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E402": {
+        "description": "billing_restricted",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E403": {
+        "description": "send_not_activated or sending_paused",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E404": {
+        "description": "not_found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E422": {
+        "description": "validation_error, domain_not_verified, template_not_found or template_variables",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E429": {
+        "description": "rate_limited (retry after Retry-After), monthly_quota_reached or daily_cap_reached (don't retry automatically)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        },
+        "headers": {
+          "X-Request-Id": {
+            "$ref": "#/components/headers/X-Request-Id"
+          },
+          "RateLimit-Limit": {
+            "$ref": "#/components/headers/RateLimit-Limit"
+          },
+          "RateLimit-Remaining": {
+            "$ref": "#/components/headers/RateLimit-Remaining"
+          },
+          "RateLimit-Reset": {
+            "$ref": "#/components/headers/RateLimit-Reset"
+          },
+          "Retry-After": {
+            "$ref": "#/components/headers/Retry-After"
+          }
+        }
+      },
+      "E503": {
+        "description": "maintenance",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "E409": {
+        "description": "idempotency_conflict — the Idempotency-Key was already used for a different request",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "headers": {
+      "X-Request-Id": {
+        "description": "Identifies the request. Send your own (8–64 of A-Z a-z 0-9 . _ -) to have it echoed back.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "RateLimit-Limit": {
+        "description": "Requests allowed per minute under the tightest limit this request counted against.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Remaining": {
+        "description": "Requests left in the current minute.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "RateLimit-Reset": {
+        "description": "Seconds until the current window resets.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "Retry-After": {
+        "description": "Seconds to wait before retrying.",
+        "schema": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

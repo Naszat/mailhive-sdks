@@ -1,0 +1,120 @@
+{
+  "description": "Mailhive-Signature test vectors, generated with the Mailhive backend's own signing function (app/services/send/webhooks.py sign()). Every SDK's webhook verifier must pass all of them with a tolerance of 300 seconds. `now` is the unix time to verify at; `reason` is why an invalid case fails (header, timestamp or signature).",
+  "tolerance_seconds": 300,
+  "cases": [
+    {
+      "name": "valid signature",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": true
+    },
+    {
+      "name": "valid within the tolerance",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640300,
+      "valid": true
+    },
+    {
+      "name": "timestamp too old",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640301,
+      "valid": false,
+      "reason": "timestamp"
+    },
+    {
+      "name": "timestamp too far in the future",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790639699,
+      "valid": false,
+      "reason": "timestamp"
+    },
+    {
+      "name": "payload changed",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your refund\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "signature"
+    },
+    {
+      "name": "re-serialized payload (whitespace added)",
+      "payload": "{\"type\": \"email.delivered\", \"created_at\": \"2026-09-28T12:00:00Z\", \"data\": {\"email_id\": \"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\", \"from\": \"hello@acme.com\", \"to\": [\"ada@example.com\"], \"subject\": \"Your receipt\", \"tags\": {\"type\": \"receipt\"}, \"recipient\": \"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "signature"
+    },
+    {
+      "name": "wrong secret",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "signature"
+    },
+    {
+      "name": "several v1 values, one valid (secret rotation)",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000,v1=765971d8800326b957e7171f5c53097d72ee2f38fe78505cd121bd1bcec29ff9,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": true
+    },
+    {
+      "name": "timestamp swapped for a newer one",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640060,v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640070,
+      "valid": false,
+      "reason": "signature"
+    },
+    {
+      "name": "no v1 value",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "t=1790640000",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "header"
+    },
+    {
+      "name": "no timestamp",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "v1=730217e03cf9594d7fa94a7c1e7e0663f10cd5a5fec057e563985a24b7d4c2f3",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "header"
+    },
+    {
+      "name": "empty header",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "header"
+    },
+    {
+      "name": "garbage header",
+      "payload": "{\"type\":\"email.delivered\",\"created_at\":\"2026-09-28T12:00:00Z\",\"data\":{\"email_id\":\"5f1c2c8e-8a0e-4c7b-9f5e-2d8f3b1a6c44\",\"from\":\"hello@acme.com\",\"to\":[\"ada@example.com\"],\"subject\":\"Your receipt\",\"tags\":{\"type\":\"receipt\"},\"recipient\":\"ada@example.com\"}}",
+      "header": "sha256=deadbeef",
+      "secret": "whsec_5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e",
+      "now": 1790640010,
+      "valid": false,
+      "reason": "header"
+    }
+  ]
+}

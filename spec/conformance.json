@@ -1,0 +1,145 @@
+{
+  "description": "Behaviour every Mailhive Send SDK must share. Each case runs against the mock server (mock-server/server.mjs): the API key picks the scenario, POST /__reset clears it, and GET /__requests returns what the SDK sent. Configure the SDK with baseUrl = the mock server's /v1 and maxRetries = 2. Error kinds map to each SDK's own error classes (see README.md).",
+  "email": {
+    "from": "Acme <hello@acme.com>",
+    "to": "ada@example.com",
+    "subject": "Hi",
+    "text": "Hello"
+  },
+  "cases": [
+    {
+      "name": "sends an email with the standard headers",
+      "key": "mhs_ok",
+      "call": "emails.send",
+      "expect": {
+        "attempts": 1,
+        "result": { "id": "msg_1", "status": "queued", "suppressed": [], "test": false },
+        "request": {
+          "method": "POST",
+          "path": "/v1/send/emails",
+          "authorization": "Bearer mhs_ok",
+          "contentType": "application/json",
+          "userAgentPattern": "^mailhive-[a-z]+/\\d+\\.\\d+\\.\\d+",
+          "idempotencyKeyPattern": "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+          "body": { "from": "Acme <hello@acme.com>", "to": "ada@example.com", "subject": "Hi", "text": "Hello" }
+        }
+      }
+    },
+    {
+      "name": "keeps an idempotency key the caller supplies",
+      "key": "mhs_ok",
+      "call": "emails.send",
+      "idempotencyKey": "order-1042-receipt",
+      "expect": { "attempts": 1, "request": { "idempotencyKey": "order-1042-receipt" } }
+    },
+    {
+      "name": "sends a batch and returns the list of accepted emails",
+      "key": "mhs_ok",
+      "call": "emails.sendBatch",
+      "expect": {
+        "attempts": 1,
+        "result": [
+          { "id": "msg_1", "status": "queued", "suppressed": [], "test": false },
+          { "id": "msg_2", "status": "queued", "suppressed": [], "test": false }
+        ],
+        "request": { "method": "POST", "path": "/v1/send/emails/batch", "bodyEmailCount": 2 }
+      }
+    },
+    {
+      "name": "gets an email",
+      "key": "mhs_ok",
+      "call": "emails.get",
+      "id": "msg_1",
+      "expect": {
+        "attempts": 1,
+        "resultFields": { "id": "msg_1", "status": "delivered" },
+        "request": { "method": "GET", "path": "/v1/send/emails/msg_1", "noIdempotencyKey": true }
+      }
+    },
+    {
+      "name": "retries rate_limited after Retry-After, with the same idempotency key",
+      "key": "mhs_rate_limited_once",
+      "call": "emails.send",
+      "expect": { "attempts": 2, "sameIdempotencyKey": true, "minElapsedMs": 900, "result": { "id": "msg_1" } }
+    },
+    {
+      "name": "retries a server error, with the same idempotency key",
+      "key": "mhs_server_error_once",
+      "call": "emails.send",
+      "expect": { "attempts": 2, "sameIdempotencyKey": true, "result": { "id": "msg_1" } }
+    },
+    {
+      "name": "retries a non-JSON 502 from a proxy using its own backoff",
+      "key": "mhs_bad_gateway_once",
+      "call": "emails.send",
+      "expect": { "attempts": 2, "sameIdempotencyKey": true, "result": { "id": "msg_1" } }
+    },
+    {
+      "name": "retries after a dropped connection",
+      "key": "mhs_network_error_once",
+      "call": "emails.send",
+      "expect": { "attempts": 2, "sameIdempotencyKey": true, "result": { "id": "msg_1" } }
+    },
+    {
+      "name": "gives up after maxRetries and reports the request id",
+      "key": "mhs_server_error_always",
+      "call": "emails.send",
+      "expect": {
+        "attempts": 3,
+        "error": { "kind": "api", "status": 500, "code": "internal_server_error", "requestId": "req_mock_3" }
+      }
+    },
+    {
+      "name": "does not retry a used-up allowance",
+      "key": "mhs_quota",
+      "call": "emails.send",
+      "expect": { "attempts": 1, "error": { "kind": "rate_limit", "status": 429, "code": "monthly_quota_reached" } }
+    },
+    {
+      "name": "does not retry a daily cap",
+      "key": "mhs_daily_cap",
+      "call": "emails.send",
+      "expect": { "attempts": 1, "error": { "kind": "rate_limit", "status": 429, "code": "daily_cap_reached" } }
+    },
+    {
+      "name": "maps 401",
+      "key": "mhs_unauthorized",
+      "call": "emails.send",
+      "expect": { "attempts": 1, "error": { "kind": "authentication", "status": 401, "code": "invalid_api_key", "requestId": "req_mock_1" } }
+    },
+    {
+      "name": "maps 402",
+      "key": "mhs_billing",
+      "call": "emails.send",
+      "expect": { "attempts": 1, "error": { "kind": "billing", "status": 402, "code": "billing_restricted" } }
+    },
+    {
+      "name": "maps 403",
+      "key": "mhs_forbidden",
+      "call": "emails.send",
+      "expect": { "attempts": 1, "error": { "kind": "permission", "status": 403, "code": "send_not_activated" } }
+    },
+    {
+      "name": "maps 404",
+      "key": "mhs_ok",
+      "call": "emails.get",
+      "id": "missing",
+      "expect": { "attempts": 1, "error": { "kind": "not_found", "status": 404, "code": "not_found" } }
+    },
+    {
+      "name": "maps 409 and does not retry it",
+      "key": "mhs_conflict",
+      "call": "emails.send",
+      "expect": { "attempts": 1, "error": { "kind": "conflict", "status": 409, "code": "idempotency_conflict" } }
+    },
+    {
+      "name": "maps 422 and keeps the details",
+      "key": "mhs_validation",
+      "call": "emails.send",
+      "expect": {
+        "attempts": 1,
+        "error": { "kind": "validation", "status": 422, "code": "validation_error", "hasDetails": true }
+      }
+    }
+  ]
+}
