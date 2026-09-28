@@ -1,0 +1,32 @@
+name: release-node
+
+# Publishes @mailhive/send when a node-v* tag is pushed from main. Uses npm
+# trusted publishing (OIDC): no npm token is stored in this repository.
+# One-time setup on npmjs.com: package settings → Trusted publishing →
+# GitHub Actions, repository Naszat/mailhive-sdks, workflow release-node.yml.
+
+on:
+  push:
+    tags: ["node-v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    defaults:
+      run:
+        working-directory: node
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Tag matches package.json
+        run: test "node-v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm ci
+      - run: npm publish --provenance --access public

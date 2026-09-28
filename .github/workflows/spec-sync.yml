@@ -1,0 +1,23 @@
+name: spec-sync
+
+# Reports when spec/openapi.json differs from the published API description.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare with https://mailhive.africa/docs/mailhive-send-openapi.json
+        run: |
+          curl -fsSL https://mailhive.africa/docs/mailhive-send-openapi.json -o published.json
+          if ! diff <(jq -S . published.json) <(jq -S . spec/openapi.json); then
+            echo "::error::spec/openapi.json differs from the published spec. Update it (and the SDKs) to match."
+            exit 1
+          fi
