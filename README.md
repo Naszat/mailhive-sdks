@@ -4,7 +4,8 @@ Official client libraries for [Mailhive Send](https://mailhive.africa/docs/send/
 
 | Language | Package | Status |
 |---|---|---|
-| Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 (pre-release) |
+| Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 (on npm) |
+| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.1 (pre-release) |
 | Python | `mailhive` | Planned |
 | PHP | `mailhive/mailhive-php` | Planned |
 | Go | `github.com/Naszat/mailhive-go` | Planned |
@@ -18,6 +19,7 @@ Every SDK must behave the same way. So they share one specification, kept in [`s
 
 - **`spec/openapi.json`** is a copy of the published API description at `https://mailhive.africa/docs/mailhive-send-openapi.json`. A scheduled CI job reports when the two differ.
 - **`spec/conformance.json`** lists the behaviour every SDK must pass: headers, retries, idempotency and how errors are mapped. Each case runs against the **mock server** in [`mock-server/`](mock-server/). The API key chooses the scenario, and the server records every request.
+- **`spec/pow-vectors.json`** holds anti-spam challenges issued by the backend, with their solutions. The browser library's solver must solve every one.
 - **`spec/webhook-vectors.json`** holds webhook signatures made with the Mailhive backend's own signing function. Every verifier must accept the valid ones and reject the invalid ones.
 
 ## Standards every SDK follows

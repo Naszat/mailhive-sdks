@@ -1,0 +1,35 @@
+{
+  "description": "Proof-of-work challenges issued by the Mailhive backend (app/services/send/client_challenge.py issue()), with the number that solves each: sha256(salt + number) == challenge. maxnumber is lowered to 2000 to keep tests fast; production uses 100000.",
+  "cases": [
+    {
+      "challenge": {
+        "algorithm": "SHA-256",
+        "challenge": "3d35ee7f13f365ede61e72e7c4a87850d85d9d952fdbf92e17fff5f23ac64a39",
+        "maxnumber": 2000,
+        "salt": "b07a5c2c66f3fdc8217dbe52?endpoint=7d3f0c2e-0000-4000-8000-000000000000&issued=1790640000&expires=1790640300",
+        "signature": "4544d0ad082865359d6f4f92adb7bbc91e6c78da18cd79717af7773f7baf0c1f"
+      },
+      "number": 1258
+    },
+    {
+      "challenge": {
+        "algorithm": "SHA-256",
+        "challenge": "a3be67230d3af391b4a17b28e056f1e69af9a6efecc8ff2004eac333e79546b0",
+        "maxnumber": 2000,
+        "salt": "226b0249cc12d80f9e6a0668?endpoint=7d3f0c2e-0000-4000-8000-000000000001&issued=1790640000&expires=1790640300",
+        "signature": "e398b5ee950f0261e12cb9caa50cedc64df163c1e64fea29ef0d128cffa71db4"
+      },
+      "number": 461
+    },
+    {
+      "challenge": {
+        "algorithm": "SHA-256",
+        "challenge": "85ac5ac3f6ada146144bcbddf0699561fe86e3daa9377ed046f6f0ea736a6625",
+        "maxnumber": 2000,
+        "salt": "c21396e76aaefcb011131656?endpoint=7d3f0c2e-0000-4000-8000-000000000002&issued=1790640000&expires=1790640300",
+        "signature": "18de44afdc2f340b794eb644ac36756d2eb108f2a1503421d9568a679fcc7459"
+      },
+      "number": 1760
+    }
+  ]
+}
