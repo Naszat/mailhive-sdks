@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mailhive"
+dynamic = ["version"]
+description = "The official Python SDK for Mailhive Send: transactional email from Africa."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.9"
+authors = [{ name = "Naszat" }]
+keywords = ["mailhive", "email", "transactional-email", "django", "africa"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Framework :: Django",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Topic :: Communications :: Email",
+  "Typing :: Typed",
+]
+dependencies = ["httpx>=0.25,<1", "typing-extensions>=4.7; python_version<'3.11'"]
+
+[project.optional-dependencies]
+django = ["django>=4.2"]
+
+[project.urls]
+Homepage = "https://mailhive.africa/docs/sdks/python"
+Source = "https://github.com/Naszat/mailhive-sdks/tree/main/python"
+Issues = "https://github.com/Naszat/mailhive-sdks/issues"
+
+[tool.hatch.version]
+path = "src/mailhive/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mailhive"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
