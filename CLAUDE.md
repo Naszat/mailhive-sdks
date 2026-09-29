@@ -13,5 +13,6 @@
 Run the checks for every SDK you touched, and commit only when they pass:
 
 - Node: `cd node && npm run typecheck && npm test && npm run build`
+- Browser client: `cd client && npm run typecheck && npm test && npm run build`
 
 Any change to `spec/` or `mock-server/` must pass in **every** SDK.
