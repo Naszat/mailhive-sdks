@@ -1,0 +1,35 @@
+name: release-python
+
+# Publishes `mailhive` to PyPI when a python-v* tag is pushed from main,
+# through PyPI trusted publishing (OIDC): no PyPI token is stored anywhere.
+# One-time setup on pypi.org: add a trusted publisher for the project, with
+# repository Naszat/mailhive-sdks, workflow release-python.yml, environment
+# pypi. (For the first release, use "pending publisher" before the project
+# exists.)
+
+on:
+  push:
+    tags: ["python-v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tag matches the package version
+        run: test "python-v$(python -c "exec(open('src/mailhive/_version.py').read()); print(__version__)")" = "${GITHUB_REF_NAME}"
+      - run: pip install build && python -m build
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist
