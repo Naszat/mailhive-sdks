@@ -5,9 +5,12 @@ name: split-php
 # on main publishes v1.2.3 there, and Packagist picks it up.
 #
 # One-time setup:
-#   1. Create the empty repository Naszat/mailhive-php (public).
-#   2. Add a deploy key with write access to it; store the private key here as
-#      the secret PHP_MIRROR_DEPLOY_KEY.
+#   1. The public repository Naszat/mailhive-php exists (created 2026-09-29).
+#   2. Deploy keys are switched off for the Naszat organization, so either
+#      allow them (Organization settings → Repository → Deploy keys), add one
+#      with write access to mailhive-php and store its private key here as
+#      PHP_MIRROR_DEPLOY_KEY; or leave the secret unset and mirror by hand
+#      (see php/README.md's "Releasing"). Without the secret this job skips.
 #   3. Submit https://github.com/Naszat/mailhive-php on packagist.org (vendor
 #      "mailhive") and enable its GitHub hook.
 
@@ -23,14 +26,22 @@ permissions:
 jobs:
   split:
     runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.PHP_MIRROR_DEPLOY_KEY != '' }}
     steps:
+      - name: Skip without a deploy key
+        if: env.HAS_KEY != 'true'
+        run: echo "::notice::PHP_MIRROR_DEPLOY_KEY isn't set, so php/ wasn't mirrored. Mirror it by hand (php/README.md)."
       - uses: actions/checkout@v4
+        if: env.HAS_KEY == 'true'
         with:
           fetch-depth: 0
       - uses: webfactory/ssh-agent@v0.9.0
+        if: env.HAS_KEY == 'true'
         with:
           ssh-private-key: ${{ secrets.PHP_MIRROR_DEPLOY_KEY }}
       - name: Split php/ and push to the mirror
+        if: env.HAS_KEY == 'true'
         run: |
           git subtree split --prefix php -b php-split
           git push git@github.com:Naszat/mailhive-php.git php-split:main --force

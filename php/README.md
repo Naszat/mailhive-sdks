@@ -140,3 +140,17 @@ new Mailhive('mhs_…', [
 **Test keys** (`mhs_test_…`) work unchanged: delivery is simulated and nothing is billed.
 
 This package is published from the [mailhive-sdks](https://github.com/Naszat/mailhive-sdks) monorepo. Please open issues and pull requests there.
+
+## Releasing (maintainers)
+
+1. Bump `Mailhive::VERSION`, then merge to `main` in mailhive-sdks.
+2. Push the tag `php-vX.Y.Z` there.
+3. The `split-php` workflow mirrors `php/` to Naszat/mailhive-php and tags it `vX.Y.Z`. Packagist then picks it up.
+
+Without the `PHP_MIRROR_DEPLOY_KEY` secret, run the same steps from a checkout of `main`:
+
+```sh
+git subtree split --prefix php -b php-split
+git push git@github.com:Naszat/mailhive-php.git php-split:main
+git tag vX.Y.Z php-split && git push git@github.com:Naszat/mailhive-php.git vX.Y.Z
+```
