@@ -173,4 +173,4 @@ new Mailhive({
 
 ## Keep your key on the server
 
-API keys can send email as your domains. The SDK refuses to run with a secret key in a browser. To send from a site with no backend, use Mailhive Send's client-side forms (coming soon), which are built for that.
+API keys can send email as your domains. The SDK refuses to run with a secret key in a browser. To send from a site with no backend, use [`@mailhive/client`](../client/) and a form's publishable key.
