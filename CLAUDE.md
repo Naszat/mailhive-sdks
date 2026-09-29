@@ -15,5 +15,6 @@ Run the checks for every SDK you touched, and commit only when they pass:
 - Node: `cd node && npm run typecheck && npm test && npm run build`
 - Browser client: `cd client && npm run typecheck && npm test && npm run build`
 - Python: `cd python && .venv/bin/python -m pytest -q` (needs `node` on PATH for the mock server; create the venv with `python3 -m venv .venv && .venv/bin/pip install -e '.[django]' pytest`)
+- PHP: `cd php && composer install && vendor/bin/phpunit` (also needs `node`). The `laravel` suite needs PHP 8.2+. Don't name a core test `Laravel*`: the core suite excludes `tests/Laravel/`
 
 Any change to `spec/` or `mock-server/` must pass in **every** SDK.

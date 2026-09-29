@@ -7,7 +7,7 @@ Official client libraries for [Mailhive Send](https://mailhive.africa/docs/send/
 | Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 (on npm) |
 | Browser forms (no backend) | [`@mailhive/client`](client/) | 0.1 (pre-release) |
 | Python (and Django) | [`mailhive`](python/) | 0.1 (pre-release) |
-| PHP | `mailhive/mailhive-php` | Planned |
+| PHP (and Laravel) | [`mailhive/mailhive-php`](php/) | 0.1 (pre-release) |
 | Go | `github.com/Naszat/mailhive-go` | Planned |
 | Java / Kotlin | `africa.mailhive:mailhive-java` | Planned |
 | .NET | `Mailhive` | Planned |

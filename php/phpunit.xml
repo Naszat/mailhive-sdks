@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         cacheDirectory=".phpunit.cache"
+         failOnWarning="true"
+         failOnDeprecation="true">
+    <testsuites>
+        <testsuite name="core">
+            <directory>tests</directory>
+            <exclude>tests/Laravel/</exclude>
+        </testsuite>
+        <!-- Needs orchestra/testbench, so PHP 8.2+ (Laravel 11+). -->
+        <testsuite name="laravel">
+            <directory>tests/Laravel</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>
