@@ -1,0 +1,42 @@
+name: split-php
+
+# Packagist reads composer.json from a repository's root, so php/ is mirrored
+# to the read-only repository Naszat/mailhive-php. Pushing a php-v1.2.3 tag
+# on main publishes v1.2.3 there, and Packagist picks it up.
+#
+# One-time setup:
+#   1. Create the empty repository Naszat/mailhive-php (public).
+#   2. Add a deploy key with write access to it; store the private key here as
+#      the secret PHP_MIRROR_DEPLOY_KEY.
+#   3. Submit https://github.com/Naszat/mailhive-php on packagist.org (vendor
+#      "mailhive") and enable its GitHub hook.
+
+on:
+  push:
+    branches: [main]
+    paths: ["php/**"]
+    tags: ["php-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.PHP_MIRROR_DEPLOY_KEY }}
+      - name: Split php/ and push to the mirror
+        run: |
+          git subtree split --prefix php -b php-split
+          git push git@github.com:Naszat/mailhive-php.git php-split:main --force
+          if [[ "${GITHUB_REF}" == refs/tags/php-v* ]]; then
+            version="${GITHUB_REF_NAME#php-}"
+            test "$version" = "v$(sed -n "s/.*VERSION = '\(.*\)';/\1/p" php/src/Mailhive.php)"
+            git tag "$version" php-split
+            git push git@github.com:Naszat/mailhive-php.git "$version"
+          fi

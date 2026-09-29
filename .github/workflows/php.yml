@@ -1,0 +1,39 @@
+name: php
+
+on:
+  push:
+    branches: [develop, main]
+    paths: ["php/**", "spec/**", "mock-server/**", ".github/workflows/php.yml"]
+  pull_request:
+    paths: ["php/**", "spec/**", "mock-server/**", ".github/workflows/php.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ["8.1", "8.2", "8.3", "8.4", "8.5"]
+    defaults:
+      run:
+        working-directory: php
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # runs the shared mock server
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: curl, json
+          coverage: none
+      # Laravel 11+ (and so Testbench) needs PHP 8.2: 8.1 runs the core suite only.
+      - if: matrix.php == '8.1'
+        run: composer remove --dev --no-update orchestra/testbench
+      - run: composer update --no-interaction --prefer-dist
+      - if: matrix.php == '8.1'
+        run: vendor/bin/phpunit --testsuite core
+      - if: matrix.php != '8.1'
+        run: vendor/bin/phpunit

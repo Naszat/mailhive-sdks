@@ -1,0 +1,53 @@
+{
+    "name": "mailhive/mailhive-php",
+    "description": "The official PHP SDK for Mailhive Send, with a Laravel mail transport.",
+    "type": "library",
+    "license": "MIT",
+    "keywords": [
+        "mailhive",
+        "email",
+        "transactional-email",
+        "laravel",
+        "symfony-mailer",
+        "africa"
+    ],
+    "homepage": "https://mailhive.africa/docs/sdks/php",
+    "support": {
+        "issues": "https://github.com/Naszat/mailhive-sdks/issues",
+        "source": "https://github.com/Naszat/mailhive-php"
+    },
+    "require": {
+        "php": "^8.1",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0 || ^10.0 || ^11.0",
+        "phpunit/phpunit": "^10.5 || ^11.0",
+        "symfony/mailer": "^6.4 || ^7.0"
+    },
+    "suggest": {
+        "symfony/mailer": "For the Laravel/Symfony mail transport (Laravel includes it)"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mailhive\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mailhive\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Mailhive\\Laravel\\MailhiveServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}
