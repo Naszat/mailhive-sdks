@@ -38,3 +38,4 @@ packages = ["src/mailhive"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
