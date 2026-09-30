@@ -1,6 +1,11 @@
 import { FormError, type FieldError } from "./errors.js";
 import { solve, type Challenge } from "./pow.js";
 
+// What the form's anti-spam check is, from its challenge endpoint. Older
+// servers sent only the proof-of-work fields: that means "pow".
+type ChallengeInfo = (Challenge & { mode?: "pow" }) | { mode: "turnstile"; site_key: string | null } | { mode: "none" };
+const TURNSTILE_FIELD = "cf-turnstile-response";
+
 export const DEFAULT_BASE_URL = "https://api.mailhive.africa/v1";
 
 // The server quietly drops a submission sent sooner than this after its
@@ -21,6 +26,13 @@ export interface FormOptions {
 
 export interface SubmitOptions {
   signal?: AbortSignal;
+  /** For signed-in user forms: the user's ID token from your auth provider
+   * (Firebase `user.getIdToken()`, Supabase `session.access_token`, Clerk
+   * `getToken()`, Auth0 `getIdTokenClaims().__raw`). */
+  idToken?: string;
+  /** For forms using Cloudflare Turnstile, if the token isn't already in
+   * the values as `cf-turnstile-response` (the widget adds it to forms). */
+  turnstileToken?: string;
 }
 
 export interface Submitted {
@@ -33,7 +45,7 @@ export interface Submitted {
 export type Values = Record<string, string | number | boolean | null | undefined>;
 
 interface Prepared {
-  challenge: Promise<Challenge>;
+  challenge: Promise<ChallengeInfo>;
   fetchedAt: number;
 }
 
@@ -95,7 +107,7 @@ export class MailhiveForm {
     if (this.#prepared && Date.now() - this.#prepared.fetchedAt < MAX_AGE_MS) return;
     const challenge = this.#fetch(`${this.#base}/challenge`, { method: "POST" }).then(async (response) => {
       if (!response.ok) throw await errorFrom(response);
-      return (await response.json()) as Challenge;
+      return (await response.json()) as ChallengeInfo;
     });
     challenge.catch(() => {
       this.#prepared = null; // try again on the next prepare() or submit()
@@ -109,21 +121,31 @@ export class MailhiveForm {
     this.prepare();
     const prepared = this.#prepared!;
     this.#prepared = null; // a challenge solves one submission only
-    let challenge: Challenge;
+    let info: ChallengeInfo;
     try {
-      challenge = await prepared.challenge;
+      info = await prepared.challenge;
     } catch (error) {
       if (error instanceof FormError) throw error;
       throw new FormError({ code: "network_error", message: "Couldn't reach the server. Check your connection and try again.", status: 0 });
     }
-    const solution = await solve(challenge, options.signal);
-    const age = Date.now() - prepared.fetchedAt;
-    if (age < this.#minAgeMs) await sleep(this.#minAgeMs - age, options.signal);
 
-    const body: Record<string, unknown> = { _challenge: solution };
+    const body: Record<string, unknown> = {};
     for (const [name, value] of Object.entries(values)) {
       if (value !== undefined && value !== null) body[name] = typeof value === "string" ? value : String(value);
     }
+    const mode = info.mode ?? "pow";
+    if (mode === "pow") {
+      body._challenge = await solve(info as Challenge, options.signal);
+      const age = Date.now() - prepared.fetchedAt;
+      if (age < this.#minAgeMs) await sleep(this.#minAgeMs - age, options.signal);
+    } else if (mode === "turnstile") {
+      const token = options.turnstileToken ?? (typeof body[TURNSTILE_FIELD] === "string" ? (body[TURNSTILE_FIELD] as string) : "");
+      if (!token) {
+        throw new FormError({ code: "turnstile_missing", message: "Please complete the anti-spam check.", status: 0 });
+      }
+      body[TURNSTILE_FIELD] = token;
+    }
+    if (options.idToken) body._id_token = options.idToken;
     let response: Response;
     try {
       response = await this.#fetch(`${this.#base}/submit`, {

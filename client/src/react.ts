@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { createForm, type FormOptions, type Submitted, type Values } from "./client.js";
+import { createForm, type FormOptions, type SubmitOptions, type Submitted, type Values } from "./client.js";
 import { FormError } from "./errors.js";
 
 export type FormStatus = "idle" | "submitting" | "success" | "error";
@@ -8,8 +8,9 @@ export interface UseMailhiveForm {
   status: FormStatus;
   error: FormError | null;
   result: Submitted | null;
-  /** Sends the values. Never throws: check `status` and `error`. */
-  submit: (values: Values) => Promise<Submitted | null>;
+  /** Sends the values. Never throws: check `status` and `error`. Pass
+   * `{ idToken }` for signed-in user forms. */
+  submit: (values: Values, options?: SubmitOptions) => Promise<Submitted | null>;
   /** Starts the anti-spam check early, e.g. on the first focus. */
   prepare: () => void;
   /** The server's message for one field, if it had a problem. */
@@ -31,10 +32,10 @@ export function useMailhiveForm(key: string, options: FormOptions = {}): UseMail
   });
 
   const submit = useCallback(
-    async (values: Values) => {
+    async (values: Values, options?: SubmitOptions) => {
       setState({ status: "submitting", error: null, result: null });
       try {
-        const result = await form.submit(values);
+        const result = await form.submit(values, options);
         setState({ status: "success", error: null, result });
         return result;
       } catch (caught) {
