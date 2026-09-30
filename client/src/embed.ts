@@ -155,6 +155,10 @@ export function wire(form: HTMLFormElement): MailhiveForm | undefined {
       if (emit(form, "mailhive:error", error)) showErrors(form, error);
     } finally {
       setBusy(form, false);
+      // A Turnstile token works once: get a fresh one for another attempt.
+      const turnstile = (window as { turnstile?: { reset: (el?: Element) => void } }).turnstile;
+      const widget = form.querySelector(".cf-turnstile");
+      if (turnstile && widget) turnstile.reset(widget);
     }
   });
   return client;

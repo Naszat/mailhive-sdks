@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RootNamespace>Mailhive</RootNamespace>
+    <AssemblyName>Mailhive</AssemblyName>
+
+    <PackageId>Mailhive</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Naszat</Authors>
+    <Company>Naszat</Company>
+    <Copyright>Copyright (c) 2026 Naszat</Copyright>
+    <Description>The official .NET SDK for Mailhive Send, the transactional and broadcast email API from Mailhive: send, batch send and look up emails, with safe retries, typed errors and webhook verification.</Description>
+    <PackageProjectUrl>https://mailhive.africa/docs/sdks/dotnet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Naszat/mailhive-sdks</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>mailhive;email;transactional-email;email-api;webhooks;africa</PackageTags>
+    <PackageReleaseNotes>https://github.com/Naszat/mailhive-sdks/blob/main/dotnet/CHANGELOG.md</PackageReleaseNotes>
+    <!-- Keeps AssemblyInformationalVersion equal to Version (MailhiveClient.Version reads it). -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <InternalsVisibleTo Include="Mailhive.Tests" />
+  </ItemGroup>
+
+</Project>

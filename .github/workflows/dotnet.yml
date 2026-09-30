@@ -1,0 +1,32 @@
+name: dotnet
+
+on:
+  push:
+    branches: [develop, main]
+    paths: ["dotnet/**", "spec/**", "mock-server/**", ".github/workflows/dotnet.yml"]
+  pull_request:
+    paths: ["dotnet/**", "spec/**", "mock-server/**", ".github/workflows/dotnet.yml"]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dotnet
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # runs the shared mock server
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet test -c Release
+      - run: dotnet pack src/Mailhive/Mailhive.csproj -c Release -o artifacts

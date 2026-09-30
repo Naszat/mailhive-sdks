@@ -1,0 +1,61 @@
+name: release-java
+
+# Publishes africa.mailhive:mailhive-java to Maven Central when a java-v* tag
+# is pushed from main. The version comes from the tag (java-v0.1.0 → 0.1.0).
+#
+# One-time setup:
+# 1. Create an account on https://central.sonatype.com (the Central Portal).
+# 2. Namespaces → add `africa.mailhive` and verify it: the portal shows a
+#    verification key; add it as a DNS TXT record on mailhive.africa, then
+#    press Verify.
+# 3. Account → Generate User Token. Store its username and password as the
+#    repository secrets MAVEN_CENTRAL_USERNAME and MAVEN_CENTRAL_TOKEN.
+# 4. Make a GPG signing key (`gpg --full-generate-key`, RSA 4096), publish the
+#    public key (`gpg --keyserver keyserver.ubuntu.com --send-keys <KEYID>`),
+#    and store `gpg --armor --export-secret-keys <KEYID>` as
+#    MAVEN_GPG_PRIVATE_KEY and its passphrase as MAVEN_GPG_PASSPHRASE.
+# 5. Create the `maven-central` environment under Settings → Environments.
+
+on:
+  push:
+    tags: ["java-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: maven-central
+    defaults:
+      run:
+        working-directory: java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # the tests run the shared mock server
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: java/pom.xml
+          # Writes ~/.m2/settings.xml with a `central` server that reads
+          # these environment variables, and imports the signing key.
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_TOKEN
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Set the version from the tag
+        run: |
+          VERSION="${GITHUB_REF_NAME#java-v}"
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "Bad tag: $GITHUB_REF_NAME"; exit 1; }
+          ./mvnw -B -q versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+      - name: Build, sign and publish
+        run: ./mvnw -B -P release deploy
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.MAVEN_CENTRAL_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}

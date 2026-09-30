@@ -1,6 +1,6 @@
 {
   "name": "@mailhive/client",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Send email from website forms with Mailhive Send, no backend needed: a drop-in script, a small JavaScript API and a React hook.",
   "keywords": ["mailhive", "email", "contact-form", "forms", "static-site", "jamstack", "react"],
   "homepage": "https://mailhive.africa/docs/send/forms",

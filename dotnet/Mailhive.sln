@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{88BE0854-D50E-42E0-A41D-A1C88DC11E19}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mailhive", "src\Mailhive\Mailhive.csproj", "{71AF963E-F5E2-4434-A9CF-80A6EA1B3410}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6624D7D4-55B1-473C-BE4C-FB8E70759B32}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mailhive.Tests", "tests\Mailhive.Tests\Mailhive.Tests.csproj", "{6BA4A9D7-0388-4CCE-89CD-12EF3BCAED63}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{71AF963E-F5E2-4434-A9CF-80A6EA1B3410}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71AF963E-F5E2-4434-A9CF-80A6EA1B3410}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71AF963E-F5E2-4434-A9CF-80A6EA1B3410}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71AF963E-F5E2-4434-A9CF-80A6EA1B3410}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BA4A9D7-0388-4CCE-89CD-12EF3BCAED63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BA4A9D7-0388-4CCE-89CD-12EF3BCAED63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BA4A9D7-0388-4CCE-89CD-12EF3BCAED63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BA4A9D7-0388-4CCE-89CD-12EF3BCAED63}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{71AF963E-F5E2-4434-A9CF-80A6EA1B3410} = {88BE0854-D50E-42E0-A41D-A1C88DC11E19}
+		{6BA4A9D7-0388-4CCE-89CD-12EF3BCAED63} = {6624D7D4-55B1-473C-BE4C-FB8E70759B32}
+	EndGlobalSection
+EndGlobal

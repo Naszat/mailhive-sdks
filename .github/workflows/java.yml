@@ -1,0 +1,33 @@
+name: java
+
+on:
+  push:
+    branches: [develop, main]
+    paths: ["java/**", "spec/**", "mock-server/**", ".github/workflows/java.yml"]
+  pull_request:
+    paths: ["java/**", "spec/**", "mock-server/**", ".github/workflows/java.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ["11", "17", "21"]
+    defaults:
+      run:
+        working-directory: java
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22 # runs the shared mock server
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+          cache-dependency-path: java/pom.xml
+      - run: ./mvnw -B verify
