@@ -72,6 +72,38 @@ function Contact() {
 }
 ```
 
+## Cloudflare Turnstile
+
+If you've set the form to use your own Turnstile widget (in **Mailhive Send → Forms**), add the widget inside the form as usual. Its token is sent automatically, and the drop-in script resets the widget after each attempt:
+
+```html
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<form data-mailhive="mhp_your_form_key">
+  …
+  <div class="cf-turnstile" data-sitekey="0x4AAAAAAA…"></div>
+  <button>Send</button>
+</form>
+```
+
+With the JavaScript API, the token is taken from the `cf-turnstile-response` value, or you can pass it yourself: `form.submit(values, { turnstileToken })`.
+
+## Signed-in users
+
+For a form that only your signed-in users can send, pass their ID token from your auth provider:
+
+```js
+// Firebase
+await form.submit(values, { idToken: await auth.currentUser.getIdToken() });
+// Supabase
+await form.submit(values, { idToken: (await supabase.auth.getSession()).data.session.access_token });
+// Clerk
+await form.submit(values, { idToken: await getToken() });
+// Auth0
+await form.submit(values, { idToken: (await auth0.getIdTokenClaims()).__raw });
+```
+
+The React hook's `submit` takes the same options.
+
 ## Errors
 
 | `code` | Meaning |
@@ -82,6 +114,8 @@ function Contact() {
 | `rate_limited` | Too many submissions. Wait `retryAfter` seconds |
 | `form_paused` | The form's owner paused it |
 | `form_unavailable` | The form can't send right now |
+| `turnstile_missing` | The Turnstile widget hasn't been completed yet |
+| `sign_in_required`, `token_expired`, `token_invalid`, `email_not_verified` | Signed-in forms: no valid sign-in was sent |
 | `network_error` | The server couldn't be reached |
 
 ## Never use a secret key here
