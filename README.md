@@ -4,14 +4,14 @@ Official client libraries for [Mailhive Send](https://mailhive.africa/docs/send/
 
 | Language | Package | Status |
 |---|---|---|
-| Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 (on npm) |
-| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.1 (pre-release) |
-| Python (and Django) | [`mailhive`](python/) | 0.1 (pre-release) |
-| PHP (and Laravel) | [`mailhive/mailhive-php`](php/) | 0.1 (pre-release) |
-| Go | `github.com/Naszat/mailhive-go` | Planned |
-| Java / Kotlin | `africa.mailhive:mailhive-java` | Planned |
-| .NET | `Mailhive` | Planned |
-| Ruby | `mailhive` | Planned |
+| Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 on npm |
+| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.1 on npm; 0.2 (Turnstile, signed-in forms) unreleased |
+| Python (and Django) | [`mailhive`](python/) | 0.1 on PyPI |
+| PHP (and Laravel) | [`mailhive/mailhive-php`](php/) | 0.1 on Packagist |
+| Go | [`github.com/Naszat/mailhive-sdks/go`](go/) | 0.1 (unreleased; tag `go/v0.1.0`) |
+| Java / Kotlin | [`africa.mailhive:mailhive-java`](java/) | 0.1 (unreleased) |
+| .NET | [`Mailhive`](dotnet/) | 0.1 (unreleased) |
+| Ruby (and Rails) | [`mailhive`](ruby/) | 0.1 (unreleased) |
 
 ## How the SDKs stay consistent
 
@@ -55,4 +55,17 @@ node mock-server/server.mjs --port 4010
 
 ## Releasing
 
-Each SDK is tagged and published on its own, for example `node-v0.1.0`. See each folder's README.
+Each SDK is tagged and published on its own from `main`:
+
+| SDK | Tag | Where it goes |
+|---|---|---|
+| Node | `node-vX.Y.Z` | npm, through trusted publishing |
+| Browser client | `client-vX.Y.Z` | npm, through trusted publishing |
+| Python | `python-vX.Y.Z` | PyPI, through trusted publishing |
+| PHP | `php-vX.Y.Z` | The `Naszat/mailhive-php` mirror, then Packagist |
+| Go | `go/vX.Y.Z` | The Go module proxy (no workflow needed) |
+| Java | `java-vX.Y.Z` | Maven Central |
+| .NET | `dotnet-vX.Y.Z` | NuGet, through trusted publishing |
+| Ruby | `ruby-vX.Y.Z` | RubyGems, through trusted publishing |
+
+The one-time setup for each registry is in comments at the top of its `release-*.yml` workflow.
