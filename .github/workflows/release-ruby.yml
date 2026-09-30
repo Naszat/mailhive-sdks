@@ -1,0 +1,39 @@
+name: release-ruby
+
+# Publishes the `mailhive` gem to RubyGems when a ruby-v* tag is pushed from
+# main, through RubyGems trusted publishing (OIDC): no API key is stored
+# anywhere.
+#
+# One-time setup on rubygems.org (before the first release, while the gem
+# doesn't exist yet): Profile → Trusted publishers → "Create a pending
+# trusted publisher", with gem name mailhive, repository owner Naszat,
+# repository name mailhive-sdks, workflow filename release-ruby.yml and
+# environment rubygems. After the first push it becomes the gem's trusted
+# publisher. Also create the `rubygems` environment in this repository's
+# settings (optionally with required reviewers).
+
+on:
+  push:
+    tags: ["ruby-v*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: rubygems
+    defaults:
+      run:
+        working-directory: ruby
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      - name: Tag matches Mailhive::VERSION
+        run: test "ruby-v$(ruby -Ilib -e 'require "mailhive/version"; print Mailhive::VERSION')" = "${GITHUB_REF_NAME}"
+      - uses: rubygems/configure-rubygems-credentials@v1.0.0
+      - run: gem build mailhive.gemspec
+      - run: gem push "mailhive-${GITHUB_REF_NAME#ruby-v}.gem"
