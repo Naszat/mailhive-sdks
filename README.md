@@ -5,13 +5,13 @@ Official client libraries for [Mailhive Send](https://mailhive.africa/docs/send/
 | Language | Package | Status |
 |---|---|---|
 | Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 on npm |
-| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.1 on npm; 0.2 (Turnstile, signed-in forms) unreleased |
+| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.2 on npm |
 | Python (and Django) | [`mailhive`](python/) | 0.1 on PyPI |
 | PHP (and Laravel) | [`mailhive/mailhive-php`](php/) | 0.1 on Packagist |
-| Go | [`github.com/Naszat/mailhive-sdks/go`](go/) | 0.1 (unreleased; tag `go/v0.1.0`) |
-| Java / Kotlin | [`africa.mailhive:mailhive-java`](java/) | 0.1 (unreleased) |
-| .NET | [`Mailhive`](dotnet/) | 0.1 (unreleased) |
-| Ruby (and Rails) | [`mailhive`](ruby/) | 0.1 (unreleased) |
+| Go | [`github.com/Naszat/mailhive-sdks/go`](go/) | 0.1 (Go module proxy) |
+| Java / Kotlin | [`africa.mailhive:mailhive-java`](java/) | 0.1 on Maven Central |
+| .NET | [`Mailhive`](dotnet/) | 0.1 on NuGet |
+| Ruby (and Rails) | [`mailhive`](ruby/) | 0.1 on RubyGems |
 
 ## How the SDKs stay consistent
 
