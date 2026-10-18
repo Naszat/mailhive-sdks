@@ -64,6 +64,31 @@ const accepted = await mailhive.emails.sendBatch([email1, email2]);
 const email = await mailhive.emails.get(id); // email.status: "delivered", "bounced", …
 ```
 
+## Audiences and contacts
+
+With an API key that has **Full access**, keep an audience in step with your app or CRM:
+
+```ts
+const contact = await mailhive.contacts.upsert(audienceId, {
+  email: "ada@example.com",
+  first_name: "Ada",
+  fields: { plan: "pro" },
+});
+```
+
+`upsert` adds the person, or updates them if they're already there, so it's safe to repeat. Other calls: `audiences.list`, `audiences.create`, `audiences.rename`, `contacts.list` (pass `email` to find one person), `contacts.add`, `contacts.upsertBatch` (up to 100; check each result's `ok`), `contacts.get`, `contacts.update`, `contacts.unsubscribe` and `contacts.delete`.
+
+Someone who unsubscribed, or reported your email as spam, can't be subscribed again by your code: you get a `ConflictError` with code `contact_unsubscribed`. To bring them back, ask them to confirm:
+
+```ts
+await mailhive.contacts.upsert(audienceId, {
+  email: "ada@example.com",
+  double_opt_in: { from: "Acme News <news@yourcompany.com>", subject: "Confirm your subscription" },
+});
+```
+
+They're `pending`, and never mailed by a broadcast, until they click the link. See the [contacts API reference](https://mailhive.africa/docs/api/contacts).
+
 ## Retries and idempotency
 
 Every send carries an `Idempotency-Key`. Retries reuse it, so **a retry never sends twice**.
