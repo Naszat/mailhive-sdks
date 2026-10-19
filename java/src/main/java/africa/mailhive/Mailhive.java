@@ -30,10 +30,14 @@ public final class Mailhive {
 
     private final Transport transport;
     private final Emails emails;
+    private final Audiences audiences;
+    private final Contacts contacts;
 
     private Mailhive(Transport transport) {
         this.transport = transport;
         this.emails = new Emails(transport);
+        this.audiences = new Audiences(transport);
+        this.contacts = new Contacts(transport);
     }
 
     /** A client configured from {@code MAILHIVE_API_KEY} and {@code MAILHIVE_BASE_URL}. */
@@ -48,6 +52,16 @@ public final class Mailhive {
     /** Sending emails and looking them up. */
     public Emails emails() {
         return emails;
+    }
+
+    /** Audiences, the lists your broadcasts go to. Needs an API key with Full access. */
+    public Audiences audiences() {
+        return audiences;
+    }
+
+    /** The people in an audience. Needs an API key with Full access. */
+    public Contacts contacts() {
+        return contacts;
     }
 
     public String baseUrl() {
