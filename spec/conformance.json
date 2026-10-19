@@ -143,7 +143,7 @@
     }
   ],
   "contactCases": {
-    "description": "Audience and contact calls. Same mock server and rules as `cases`; run only by SDKs that implement the contacts API. `args` are passed in the SDK's own style. Each SDK names the operations in its own idiom (audiences.list → client.audiences.list(), contacts.upsertBatch → upsert_batch, and so on).",
+    "description": "Audience and contact calls. Same mock server and rules as `cases`; run only by SDKs that implement the contacts API. `args` are passed in the SDK's own style. Each SDK names the operations in its own idiom (audiences.list is client.audiences.list(), contacts.upsertBatch is upsert_batch, and so on).",
     "audienceId": "aud_1",
     "contact": {
       "email": "ada@example.com",
