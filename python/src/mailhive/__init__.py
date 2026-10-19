@@ -20,7 +20,20 @@ from ._errors import (
     ValidationError,
     WebhookVerificationError,
 )
-from ._types import AcceptedEmail, Attachment, Email, SendEmailParams
+from ._types import (
+    AcceptedEmail,
+    Attachment,
+    Audience,
+    Contact,
+    ContactBatchResult,
+    ContactDetail,
+    ContactInput,
+    ContactPage,
+    ContactUpdate,
+    DoubleOptIn,
+    Email,
+    SendEmailParams,
+)
 from ._version import __version__
 from ._webhooks import verify as verify_webhook
 
@@ -31,9 +44,17 @@ __all__ = [
     "AcceptedEmail",
     "AsyncMailhive",
     "Attachment",
+    "Audience",
     "AuthenticationError",
     "BillingError",
     "ConflictError",
+    "Contact",
+    "ContactBatchResult",
+    "ContactDetail",
+    "ContactInput",
+    "ContactPage",
+    "ContactUpdate",
+    "DoubleOptIn",
     "Email",
     "Mailhive",
     "MailhiveError",

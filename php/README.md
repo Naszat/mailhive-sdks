@@ -37,6 +37,31 @@ $mailhive->emails->sendBatch([$email1, $email2]); // up to 100; all accepted or 
 $mailhive->emails->get($id);                      // ['status' => 'delivered', …]
 ```
 
+## Audiences and contacts
+
+With an API key that has **Full access**, keep an audience in step with your app or CRM:
+
+```php
+$contact = $mailhive->contacts->upsert($audienceId, [
+    'email' => 'ada@example.com',
+    'first_name' => 'Ada',
+    'fields' => ['plan' => 'pro'],
+]);
+```
+
+`upsert` adds the person, or updates them if they're already there, so it's safe to repeat. Other calls: `audiences->list`, `audiences->create`, `audiences->rename`, `contacts->list` (pass `['email' => …]` to find one person), `contacts->add`, `contacts->upsertBatch` (up to 100; check each result's `ok`), `contacts->get`, `contacts->update`, `contacts->unsubscribe` and `contacts->delete`.
+
+Someone who unsubscribed, or reported your email as spam, can't be subscribed again by your code: you get a `ConflictException` with code `contact_unsubscribed`. To bring them back, ask them to confirm:
+
+```php
+$mailhive->contacts->upsert($audienceId, [
+    'email' => 'ada@example.com',
+    'double_opt_in' => ['from' => 'Acme News <news@yourcompany.com>', 'subject' => 'Confirm your subscription'],
+]);
+```
+
+They're `pending`, and never mailed by a broadcast, until they click the link. See the [contacts API reference](https://mailhive.africa/docs/api/contacts).
+
 ## Laravel
 
 The package registers itself. Add the key and the mailer:

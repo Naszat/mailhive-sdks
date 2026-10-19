@@ -64,6 +64,33 @@ Email sent = await client.Emails.GetAsync(accepted[0].Id); // sent.Status: "deli
 
 Every method takes a `CancellationToken`.
 
+## Audiences and contacts
+
+With an API key that has **Full access**, keep an audience in step with your app or CRM:
+
+```csharp
+var contact = await client.Contacts.UpsertAsync(audienceId, new ContactInput
+{
+    Email = "ada@example.com",
+    FirstName = "Ada",
+    Fields = new Dictionary<string, string> { ["plan"] = "pro" },
+});
+```
+
+`UpsertAsync` adds the person, or updates them if they're already there, so it's safe to repeat. Other calls: `Audiences.ListAsync`, `CreateAsync`, `RenameAsync`; `Contacts.ListAsync` (set `Email` in the options to find one person), `AddAsync`, `UpsertBatchAsync` (up to 100; check each result's `Ok`), `GetAsync`, `UpdateAsync`, `UnsubscribeAsync` and `DeleteAsync`.
+
+Someone who unsubscribed, or reported your email as spam, can't be subscribed again by your code: you get a `ConflictException` with code `contact_unsubscribed`. To bring them back, ask them to confirm:
+
+```csharp
+await client.Contacts.UpsertAsync(audienceId, new ContactInput
+{
+    Email = "ada@example.com",
+    DoubleOptIn = new DoubleOptIn { From = "Acme News <news@yourcompany.com>", Subject = "Confirm your subscription" },
+});
+```
+
+They're `pending`, and never mailed by a broadcast, until they click the link. See the [contacts API reference](https://mailhive.africa/docs/api/contacts).
+
 ## Retries and idempotency
 
 Every send carries an `Idempotency-Key`. Retries reuse it, so **a retry never sends twice**.

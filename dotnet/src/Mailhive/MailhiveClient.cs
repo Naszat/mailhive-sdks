@@ -94,6 +94,8 @@ namespace Mailhive
                 _http = httpClient;
             }
             Emails = new EmailsResource(this);
+            Audiences = new AudiencesResource(this);
+            Contacts = new ContactsResource(this);
         }
 
         /// <summary>This SDK's version.</summary>
@@ -110,6 +112,12 @@ namespace Mailhive
 
         /// <summary>Sends and looks up emails.</summary>
         public EmailsResource Emails { get; }
+
+        /// <summary>Audiences, the lists your broadcasts go to. Needs an API key with Full access.</summary>
+        public AudiencesResource Audiences { get; }
+
+        /// <summary>The people in an audience. Needs an API key with Full access.</summary>
+        public ContactsResource Contacts { get; }
 
         /// <summary>Waits between retries. Tests replace it to run without real delays.</summary>
         internal Func<TimeSpan, CancellationToken, Task> Delay { get; set; } = (wait, token) => Task.Delay(wait, token);
@@ -172,6 +180,10 @@ namespace Mailhive
 
                 if (status >= 200 && status < 300)
                 {
+                    if (string.IsNullOrEmpty(text) && typeof(T) == typeof(NoContent))
+                    {
+                        return (T)(object)new NoContent();
+                    }
                     try
                     {
                         return JsonSerializer.Deserialize<T>(text, Json.Options)

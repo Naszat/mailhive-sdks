@@ -27,11 +27,13 @@ use Mailhive\Http\TransportException;
  */
 final class Mailhive
 {
-    public const VERSION = '0.1.0';
+    public const VERSION = '0.2.0';
     public const DEFAULT_BASE_URL = 'https://api.mailhive.africa/v1';
     private const MAX_RETRY_AFTER = 60.0;
 
     public readonly Emails $emails;
+    public readonly Audiences $audiences;
+    public readonly Contacts $contacts;
     public readonly string $baseUrl;
     private readonly string $apiKey;
     private readonly float $timeout;
@@ -65,6 +67,8 @@ final class Mailhive
             usleep((int) ($seconds * 1_000_000));
         });
         $this->emails = new Emails($this);
+        $this->audiences = new Audiences($this);
+        $this->contacts = new Contacts($this);
     }
 
     /** Never shows the key in var_dump() or print_r(). */
@@ -82,8 +86,10 @@ final class Mailhive
     /**
      * @internal Used by the resources.
      * @param array<string, mixed>|null $body
+     * @param array<string, string|int|null> $query left out when null
+     * @return array<mixed> empty for a response with no body (204)
      */
-    public function request(string $method, string $path, ?array $body = null, ?string $idempotencyKey = null): array
+    public function request(string $method, string $path, ?array $body = null, ?string $idempotencyKey = null, array $query = []): array
     {
         $headers = [
             'Authorization' => "Bearer {$this->apiKey}",
@@ -99,7 +105,8 @@ final class Mailhive
             // One key per call, reused on every retry: a retry never sends twice.
             $headers['Idempotency-Key'] = $idempotencyKey ?? self::uuid();
         }
-        $url = $this->baseUrl . $path;
+        $query = array_filter($query, static fn ($value) => $value !== null);
+        $url = $this->baseUrl . $path . ($query === [] ? '' : '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986));
 
         for ($attempt = 0; ; $attempt++) {
             try {
@@ -118,7 +125,7 @@ final class Mailhive
                 );
             }
             if ($response->status >= 200 && $response->status < 300) {
-                return json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
+                return $response->body === '' ? [] : json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
             }
             $error = self::error($response);
             $wait = $this->waitBeforeRetry($error, $attempt);

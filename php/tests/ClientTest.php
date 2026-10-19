@@ -87,4 +87,33 @@ final class ClientTest extends TestCase
         self::assertCount(3, $transport->requests);
         self::assertCount(2, $slept);
     }
+
+    public function testPercentEncodesTheQueryStringAndLeavesOutUnsetFilters(): void
+    {
+        $transport = FakeTransport::json(200, ['items' => [], 'page' => 1, 'page_size' => 20, 'total' => 0]);
+        (new Mailhive('mhs_x', ['transport' => $transport]))->contacts->list('aud 1', ['email' => 'a+b@example.com', 'page' => 2, 'q' => null]);
+        self::assertSame('GET', $transport->requests[0]['method']);
+        self::assertSame('https://api.mailhive.africa/v1/send/audiences/aud%201/contacts?email=a%2Bb%40example.com&page=2', $transport->requests[0]['url']);
+        self::assertArrayNotHasKey('Idempotency-Key', $transport->requests[0]['headers']);
+    }
+
+    public function testSendsEmptyFieldsAsAnObjectOrNotAtAll(): void
+    {
+        $transport = FakeTransport::json(200, ['id' => 'c1']);
+        $client = new Mailhive('mhs_x', ['transport' => $transport]);
+        $client->contacts->upsert('a1', ['email' => 'ada@example.com', 'fields' => []]);
+        self::assertSame(['email' => 'ada@example.com'], $transport->lastBody());
+        $client->contacts->update('c1', ['fields' => []]);
+        self::assertSame('{"fields":{}}', $transport->requests[1]['body']);
+        $client->contacts->upsert('a1', ['email' => 'ada@example.com', 'fields' => ['plan' => 'pro']]);
+        self::assertSame('{"email":"ada@example.com","fields":{"plan":"pro"}}', $transport->requests[2]['body']);
+    }
+
+    public function testADeleteWithNoBodyReturnsNothing(): void
+    {
+        $transport = new FakeTransport(static fn () => new \Mailhive\Http\Response(204, [], ''));
+        (new Mailhive('mhs_x', ['transport' => $transport]))->contacts->delete('c1');
+        self::assertSame('DELETE', $transport->requests[0]['method']);
+        self::assertStringEndsWith('/send/contacts/c1', $transport->requests[0]['url']);
+    }
 }

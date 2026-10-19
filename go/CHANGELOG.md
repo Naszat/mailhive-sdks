@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0 (unreleased)
+
+- Audiences and contacts, for API keys with Full access: `Audiences.List`, `Create` and `Rename`; `Contacts.List`, `Add`, `Upsert`, `UpsertBatch`, `Get`, `Update`, `Unsubscribe` and `Delete`.
+- `DoubleOptIn` on a contact emails the person a confirmation link; they're subscribed only if they confirm. Someone who unsubscribed or reported spam can't be re-subscribed by these calls (a `*ConflictError` with code `contact_unsubscribed`).
+- `ContactInput` and `ContactUpdate` take `*string` names (nil keeps, `""` clears); use `mailhive.String`.
+
 ## 0.1.0 (unreleased)
 
 - `mailhive.New`, with `Emails.Send`, `Emails.SendBatch` and `Emails.Get`.

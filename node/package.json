@@ -1,6 +1,6 @@
 {
   "name": "@mailhive/send",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The official Node.js and TypeScript SDK for Mailhive Send: transactional email from Africa.",
   "keywords": [
     "mailhive",
