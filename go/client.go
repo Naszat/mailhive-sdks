@@ -64,6 +64,10 @@ var userAgent = "mailhive-go/" + Version + " go/" + strings.TrimPrefix(runtime.V
 type Client struct {
 	// Emails sends and looks up emails.
 	Emails *EmailsService
+	// Audiences and Contacts manage the people your broadcasts go to. They
+	// need an API key with Full access.
+	Audiences *AudiencesService
+	Contacts  *ContactsService
 
 	apiKey     string
 	baseURL    string
@@ -150,6 +154,8 @@ func New(opts ...Option) (*Client, error) {
 		httpClient: cfg.httpClient,
 	}
 	c.Emails = &EmailsService{client: c}
+	c.Audiences = &AudiencesService{client: c}
+	c.Contacts = &ContactsService{client: c}
 	return c, nil
 }
 

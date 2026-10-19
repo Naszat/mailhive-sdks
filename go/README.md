@@ -48,6 +48,31 @@ email, err := client.Emails.Get(ctx, id)                                        
 
 A `Client` is safe for concurrent use: create one and share it.
 
+## Audiences and contacts
+
+With an API key that has **Full access**, keep an audience in step with your app or CRM:
+
+```go
+contact, err := client.Contacts.Upsert(ctx, audienceID, &mailhive.ContactInput{
+	Email:     "ada@example.com",
+	FirstName: mailhive.String("Ada"),
+	Fields:    map[string]string{"plan": "pro"},
+})
+```
+
+`Upsert` adds the person, or updates them if they're already there, so it's safe to repeat. Other calls: `Audiences.List`, `Create`, `Rename`; `Contacts.List` (set `Email` to find one person), `Add`, `UpsertBatch` (up to 100; check each result's `OK`), `Get`, `Update`, `Unsubscribe` and `Delete`.
+
+Someone who unsubscribed, or reported your email as spam, can't be subscribed again by your code: you get a `*ConflictError` with code `contact_unsubscribed`. To bring them back, ask them to confirm:
+
+```go
+_, err := client.Contacts.Upsert(ctx, audienceID, &mailhive.ContactInput{
+	Email:       "ada@example.com",
+	DoubleOptIn: &mailhive.DoubleOptIn{From: "Acme News <news@yourcompany.com>", Subject: "Confirm your subscription"},
+})
+```
+
+They're `pending`, and never mailed by a broadcast, until they click the link. See the [contacts API reference](https://mailhive.africa/docs/api/contacts).
+
 ## Retries and idempotency
 
 Every send carries an `Idempotency-Key`. Retries reuse it, so **a retry never sends twice**.
