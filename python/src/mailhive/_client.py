@@ -15,7 +15,19 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 import httpx
 
 from ._errors import APIConnectionError, APIError, MailhiveError, error_for
-from ._types import AcceptedEmail, Email, SendEmailParams
+from ._types import (
+    AcceptedEmail,
+    Audience,
+    Contact,
+    ContactBatchResult,
+    ContactDetail,
+    ContactInput,
+    ContactPage,
+    ContactUpdate,
+    DoubleOptIn,
+    Email,
+    SendEmailParams,
+)
 from ._version import __version__
 from ._webhooks import verify as _verify_webhook
 
@@ -168,6 +180,168 @@ def _quote(value: str) -> str:
     return quote(value, safe="")
 
 
+def _query(params: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Query-string values, leaving out the ones that are None."""
+    if not params:
+        return None
+    return {name: value for name, value in params.items() if value is not None} or None
+
+
+def _audience_path(audience_id: str) -> str:
+    return f"/send/audiences/{_quote(audience_id)}/contacts"
+
+
+def _contact_path(contact_id: str) -> str:
+    return f"/send/contacts/{_quote(contact_id)}"
+
+
+def _merge(contact: Optional[Mapping[str, Any]], fields: Mapping[str, Any]) -> Dict[str, Any]:
+    return {**(contact or {}), **fields}
+
+
+def _list_params(
+    email: Optional[str], q: Optional[str], status: Optional[str], page: Optional[int], page_size: Optional[int]
+) -> Dict[str, Any]:
+    return {"email": email, "q": q, "status": status, "page": page, "page_size": page_size}
+
+
+class Audiences:
+    """Audiences: the lists your broadcasts go to. Needs an API key with Full access."""
+
+    def __init__(self, client: "Mailhive") -> None:
+        self._client = client
+
+    def list(self) -> List[Audience]:
+        return self._client._request("GET", "/send/audiences", None, None)
+
+    def create(self, name: str, *, idempotency_key: Optional[str] = None) -> Audience:
+        return self._client._request("POST", "/send/audiences", {"name": name}, idempotency_key)
+
+    def rename(self, audience_id: str, name: str) -> Audience:
+        return self._client._request("PATCH", f"/send/audiences/{_quote(audience_id)}", {"name": name}, None)
+
+
+class AsyncAudiences:
+    def __init__(self, client: "AsyncMailhive") -> None:
+        self._client = client
+
+    async def list(self) -> List[Audience]:
+        return await self._client._request("GET", "/send/audiences", None, None)
+
+    async def create(self, name: str, *, idempotency_key: Optional[str] = None) -> Audience:
+        return await self._client._request("POST", "/send/audiences", {"name": name}, idempotency_key)
+
+    async def rename(self, audience_id: str, name: str) -> Audience:
+        return await self._client._request("PATCH", f"/send/audiences/{_quote(audience_id)}", {"name": name}, None)
+
+
+class Contacts:
+    """The people in an audience. Needs an API key with Full access.
+
+    Someone who unsubscribed, or reported your email as spam, can't be made
+    subscribed again by these calls (a ``ConflictError`` with code
+    ``contact_unsubscribed``). Pass ``double_opt_in`` to email them a
+    confirmation link instead."""
+
+    def __init__(self, client: "Mailhive") -> None:
+        self._client = client
+
+    def list(
+        self,
+        audience_id: str,
+        *,
+        email: Optional[str] = None,
+        q: Optional[str] = None,
+        status: Optional[str] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+    ) -> ContactPage:
+        """A page of contacts; ``email`` finds one person by exact address."""
+        return self._client._request(
+            "GET", _audience_path(audience_id), None, None, _list_params(email, q, status, page, page_size)
+        )
+
+    def add(
+        self, audience_id: str, contact: Optional[ContactInput] = None, *, idempotency_key: Optional[str] = None, **fields: Any
+    ) -> Contact:
+        """Adds one person. A 409 ``contact_exists`` if they're already there: use ``upsert``."""
+        return self._client._request("POST", _audience_path(audience_id), _merge(contact, fields), idempotency_key)
+
+    def upsert(self, audience_id: str, contact: Optional[ContactInput] = None, **fields: Any) -> Contact:
+        """Adds the person, or updates them if they're already there. Safe to repeat."""
+        return self._client._request("PUT", _audience_path(audience_id), _merge(contact, fields), None)
+
+    def upsert_batch(
+        self, audience_id: str, contacts: List[ContactInput], *, idempotency_key: Optional[str] = None
+    ) -> ContactBatchResult:
+        """Adds or updates up to 100 people. A bad entry doesn't raise: check each result's ``ok``."""
+        return self._client._request(
+            "POST", f"{_audience_path(audience_id)}/batch", {"contacts": list(contacts)}, idempotency_key
+        )
+
+    def get(self, contact_id: str) -> ContactDetail:
+        """A contact and the latest emails sent to them."""
+        return self._client._request("GET", _contact_path(contact_id), None, None)
+
+    def update(self, contact_id: str, changes: Optional[ContactUpdate] = None, **fields: Any) -> Contact:
+        """Edits names and fields (fields are replaced, not merged: use ``upsert`` to merge)."""
+        return self._client._request("PATCH", _contact_path(contact_id), _merge(changes, fields), None)
+
+    def unsubscribe(self, contact_id: str) -> Contact:
+        """Unsubscribes them. Only they can undo it, by confirming a double opt-in email."""
+        return self.update(contact_id, {"unsubscribe": True})
+
+    def delete(self, contact_id: str) -> None:
+        """Deleting someone who unsubscribed keeps their address suppressed."""
+        self._client._request("DELETE", _contact_path(contact_id), None, None)
+
+
+class AsyncContacts:
+    def __init__(self, client: "AsyncMailhive") -> None:
+        self._client = client
+
+    async def list(
+        self,
+        audience_id: str,
+        *,
+        email: Optional[str] = None,
+        q: Optional[str] = None,
+        status: Optional[str] = None,
+        page: Optional[int] = None,
+        page_size: Optional[int] = None,
+    ) -> ContactPage:
+        return await self._client._request(
+            "GET", _audience_path(audience_id), None, None, _list_params(email, q, status, page, page_size)
+        )
+
+    async def add(
+        self, audience_id: str, contact: Optional[ContactInput] = None, *, idempotency_key: Optional[str] = None, **fields: Any
+    ) -> Contact:
+        return await self._client._request("POST", _audience_path(audience_id), _merge(contact, fields), idempotency_key)
+
+    async def upsert(self, audience_id: str, contact: Optional[ContactInput] = None, **fields: Any) -> Contact:
+        return await self._client._request("PUT", _audience_path(audience_id), _merge(contact, fields), None)
+
+    async def upsert_batch(
+        self, audience_id: str, contacts: List[ContactInput], *, idempotency_key: Optional[str] = None
+    ) -> ContactBatchResult:
+        return await self._client._request(
+            "POST", f"{_audience_path(audience_id)}/batch", {"contacts": list(contacts)}, idempotency_key
+        )
+
+    async def get(self, contact_id: str) -> ContactDetail:
+        return await self._client._request("GET", _contact_path(contact_id), None, None)
+
+    async def update(self, contact_id: str, changes: Optional[ContactUpdate] = None, **fields: Any) -> Contact:
+        return await self._client._request("PATCH", _contact_path(contact_id), _merge(changes, fields), None)
+
+    async def unsubscribe(self, contact_id: str) -> Contact:
+        return await self.update(contact_id, {"unsubscribe": True})
+
+    async def delete(self, contact_id: str) -> None:
+        await self._client._request("DELETE", _contact_path(contact_id), None, None)
+
+
 class _Webhooks:
     @staticmethod
     def verify(payload, signature, secret, *, tolerance: int = 300, now: Optional[float] = None) -> Dict[str, Any]:
@@ -195,14 +369,19 @@ class Mailhive(_Base):
         self._http = http_client or httpx.Client(timeout=timeout)
         self._owns_http = http_client is None
         self.emails = Emails(self)
+        self.audiences = Audiences(self)
+        self.contacts = Contacts(self)
 
-    def _request(self, method: str, path: str, body: Any, idempotency_key: Optional[str]) -> Any:
+    def _request(
+        self, method: str, path: str, body: Any, idempotency_key: Optional[str], params: Optional[Mapping[str, Any]] = None
+    ) -> Any:
         headers, content = self._prepare(method, body, idempotency_key)
+        params = _query(params)
         url = f"{self.base_url}{path}"
         attempt = 0
         while True:
             try:
-                response = self._http.request(method, url, headers=headers, content=content, timeout=self.timeout)
+                response = self._http.request(method, url, headers=headers, content=content, params=params, timeout=self.timeout)
             except httpx.TransportError as exc:
                 if attempt < self.max_retries:
                     time.sleep(_backoff(attempt))
@@ -210,7 +389,7 @@ class Mailhive(_Base):
                     continue
                 raise APIConnectionError(_connection_message(exc, self)) from exc
             if response.is_success:
-                return response.json()
+                return response.json() if response.content else None
             error = self._error(response)
             wait = self._wait_before_retry(error, attempt)
             if wait is None:
@@ -247,14 +426,19 @@ class AsyncMailhive(_Base):
         self._http = http_client or httpx.AsyncClient(timeout=timeout)
         self._owns_http = http_client is None
         self.emails = AsyncEmails(self)
+        self.audiences = AsyncAudiences(self)
+        self.contacts = AsyncContacts(self)
 
-    async def _request(self, method: str, path: str, body: Any, idempotency_key: Optional[str]) -> Any:
+    async def _request(
+        self, method: str, path: str, body: Any, idempotency_key: Optional[str], params: Optional[Mapping[str, Any]] = None
+    ) -> Any:
         headers, content = self._prepare(method, body, idempotency_key)
+        params = _query(params)
         url = f"{self.base_url}{path}"
         attempt = 0
         while True:
             try:
-                response = await self._http.request(method, url, headers=headers, content=content, timeout=self.timeout)
+                response = await self._http.request(method, url, headers=headers, content=content, params=params, timeout=self.timeout)
             except httpx.TransportError as exc:
                 if attempt < self.max_retries:
                     await asyncio.sleep(_backoff(attempt))
@@ -262,7 +446,7 @@ class AsyncMailhive(_Base):
                     continue
                 raise APIConnectionError(_connection_message(exc, self)) from exc
             if response.is_success:
-                return response.json()
+                return response.json() if response.content else None
             error = self._error(response)
             wait = self._wait_before_retry(error, attempt)
             if wait is None:

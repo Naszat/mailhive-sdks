@@ -26,7 +26,7 @@ module Mailhive
     TIMEOUT_ERRORS = [Timeout::Error, Net::WriteTimeout, Errno::ETIMEDOUT].freeze
     private_constant :TIMEOUT_ERRORS
 
-    attr_reader :base_url, :timeout, :max_retries, :emails
+    attr_reader :base_url, :timeout, :max_retries, :emails, :audiences, :contacts
 
     # Options:
     # - api_key: a secret key (mhs_…); default MAILHIVE_API_KEY
@@ -52,6 +52,8 @@ module Mailhive
       @transport = transport || NetHTTPTransport.new
       @sleeper = sleeper || ->(seconds) { sleep(seconds) }
       @emails = Emails.new(self)
+      @audiences = Audiences.new(self)
+      @contacts = Contacts.new(self)
     end
 
     # Never shows the key.
@@ -61,7 +63,7 @@ module Mailhive
     alias to_s inspect
 
     # @api private Used by the resources.
-    def request(method, path, body = nil, idempotency_key: nil)
+    def request(method, path, body = nil, idempotency_key: nil, query: nil)
       headers = {
         "Authorization" => "Bearer #{@api_key}",
         "Accept" => "application/json",
@@ -74,7 +76,7 @@ module Mailhive
       end
       # One key per call, reused on every retry: a retry never sends twice.
       headers["Idempotency-Key"] = present(idempotency_key&.to_s) || SecureRandom.uuid if method == "POST"
-      url = "#{base_url}#{path}"
+      url = "#{base_url}#{path}#{query_string(query)}"
 
       attempt = 0
       loop do
@@ -110,6 +112,13 @@ module Mailhive
 
     def present(value)
       value.nil? || value.empty? ? nil : value
+    end
+
+    # "?email=a%2Bb%40example.com&page=2": percent-encoded, nil values left out.
+    def query_string(query)
+      pairs = (query || {}).reject { |_name, value| value.nil? }
+                           .map { |name, value| "#{name}=#{Emails.escape(value)}" }
+      pairs.empty? ? "" : "?#{pairs.join("&")}"
     end
 
     def parse(body)

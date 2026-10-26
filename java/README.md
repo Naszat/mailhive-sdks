@@ -73,6 +73,27 @@ List<AcceptedEmail> accepted = client.emails().sendBatch(List.of(email1, email2)
 Email sent = client.emails().get(id);                                              // sent.status(): "delivered", "bounced", …
 ```
 
+## Audiences and contacts
+
+With an API key that has **Full access**, keep an audience in step with your app or CRM:
+
+```java
+Contact contact = client.contacts().upsert(audienceId,
+    ContactInput.builder("ada@example.com").firstName("Ada").field("plan", "pro").build());
+```
+
+`upsert` adds the person, or updates them if they're already there, so it's safe to repeat. Other calls: `audiences().list`, `create`, `rename`; `contacts().list` (with `ListContactsParams.builder().email(…)` to find one person), `add`, `upsertBatch` (up to 100; check each result's `ok()`), `get`, `update`, `unsubscribe` and `delete`.
+
+Someone who unsubscribed, or reported your email as spam, can't be subscribed again by your code: you get a `ConflictException` with code `contact_unsubscribed`. To bring them back, ask them to confirm:
+
+```java
+client.contacts().upsert(audienceId, ContactInput.builder("ada@example.com")
+    .doubleOptIn(DoubleOptIn.from("Acme News <news@yourcompany.com>", "Confirm your subscription"))
+    .build());
+```
+
+They're `pending`, and never mailed by a broadcast, until they click the link. See the [contacts API reference](https://mailhive.africa/docs/api/contacts).
+
 ## Retries and idempotency
 
 Every send carries an `Idempotency-Key`. Retries reuse it, so **a retry never sends twice**.

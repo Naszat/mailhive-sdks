@@ -1,4 +1,6 @@
 import { ConnectionError, MailhiveError, errorFor, type ApiErrorInit } from "./errors.js";
+import { Audiences } from "./resources/audiences.js";
+import { Contacts } from "./resources/contacts.js";
 import { Emails } from "./resources/emails.js";
 import { VERSION } from "./version.js";
 import { verifyWebhook, type VerifyWebhookOptions } from "./webhooks.js";
@@ -20,6 +22,8 @@ export interface MailhiveOptions {
 
 interface RequestInit {
   body?: unknown;
+  /** Added to the URL; undefined values are left out. */
+  query?: Record<string, string | number | undefined>;
   idempotencyKey?: string;
   signal?: AbortSignal;
 }
@@ -70,6 +74,8 @@ function retryAfterMs(headers: Headers): number | null {
 
 export class Mailhive {
   readonly emails: Emails;
+  readonly audiences: Audiences;
+  readonly contacts: Contacts;
   readonly webhooks = {
     /** Checks a webhook's `Mailhive-Signature` and returns the parsed event. */
     verify: (options: VerifyWebhookOptions) => verifyWebhook(options),
@@ -107,10 +113,12 @@ export class Mailhive {
     }
     this.#fetch = fetchImpl.bind(globalThis);
     this.emails = new Emails(this);
+    this.audiences = new Audiences(this);
+    this.contacts = new Contacts(this);
   }
 
   /** @internal Used by the resources. */
-  async request<T>(method: "GET" | "POST", path: string, init: RequestInit = {}): Promise<T> {
+  async request<T>(method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string, init: RequestInit = {}): Promise<T> {
     // One key per call, reused on every retry: a retry never sends twice.
     const idempotencyKey = method === "POST" ? (init.idempotencyKey ?? crypto.randomUUID()) : undefined;
     const headers: Record<string, string> = {
@@ -121,7 +129,9 @@ export class Mailhive {
     if (init.body !== undefined) headers["Content-Type"] = "application/json";
     if (idempotencyKey) headers["Idempotency-Key"] = idempotencyKey;
     const body = init.body === undefined ? undefined : JSON.stringify(init.body);
-    const url = `${this.#baseUrl}${path}`;
+    const search = new URLSearchParams();
+    for (const [name, value] of Object.entries(init.query ?? {})) if (value !== undefined) search.set(name, String(value));
+    const url = `${this.#baseUrl}${path}${search.size > 0 ? `?${search}` : ""}`;
 
     for (let attempt = 0; ; attempt++) {
       const canRetry = attempt < this.#maxRetries;

@@ -5,13 +5,13 @@ Official client libraries for [Mailhive Send](https://mailhive.africa/docs/send/
 | Language | Package | Status |
 |---|---|---|
 | Node.js / TypeScript | [`@mailhive/send`](node/) | 0.1 on npm |
-| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.1 on npm; 0.2 (Turnstile, signed-in forms) unreleased |
+| Browser forms (no backend) | [`@mailhive/client`](client/) | 0.2 on npm |
 | Python (and Django) | [`mailhive`](python/) | 0.1 on PyPI |
 | PHP (and Laravel) | [`mailhive/mailhive-php`](php/) | 0.1 on Packagist |
-| Go | [`github.com/Naszat/mailhive-sdks/go`](go/) | 0.1 (unreleased; tag `go/v0.1.0`) |
-| Java / Kotlin | [`africa.mailhive:mailhive-java`](java/) | 0.1 (unreleased) |
-| .NET | [`Mailhive`](dotnet/) | 0.1 (unreleased) |
-| Ruby (and Rails) | [`mailhive`](ruby/) | 0.1 (unreleased) |
+| Go | [`github.com/Naszat/mailhive-sdks/go`](go/) | 0.1 (Go module proxy) |
+| Java / Kotlin | [`africa.mailhive:mailhive-java`](java/) | 0.1 on Maven Central |
+| .NET | [`Mailhive`](dotnet/) | 0.1 on NuGet |
+| Ruby (and Rails) | [`mailhive`](ruby/) | 0.1 on RubyGems |
 
 ## How the SDKs stay consistent
 
@@ -19,6 +19,7 @@ Every SDK must behave the same way. So they share one specification, kept in [`s
 
 - **`spec/openapi.json`** is a copy of the published API description at `https://mailhive.africa/docs/mailhive-send-openapi.json`. A scheduled CI job reports when the two differ.
 - **`spec/conformance.json`** lists the behaviour every SDK must pass: headers, retries, idempotency and how errors are mapped. Each case runs against the **mock server** in [`mock-server/`](mock-server/). The API key chooses the scenario, and the server records every request.
+- **`contactCases`** in the same file covers the audiences and contacts API (Full-access keys): which requests each call makes, the consent rules' error mapping, and empty (204) responses. The browser library doesn't implement it.
 - **`spec/pow-vectors.json`** holds anti-spam challenges issued by the backend, with their solutions. The browser library's solver must solve every one.
 - **`spec/webhook-vectors.json`** holds webhook signatures made with the Mailhive backend's own signing function. Every verifier must accept the valid ones and reject the invalid ones.
 

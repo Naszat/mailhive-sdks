@@ -30,7 +30,26 @@ const EMAIL = {
   last_event_at: "2026-09-28T12:00:03",
 };
 
+const AUDIENCE = { id: "aud_1", name: "Newsletter", created_at: "2026-10-19T09:00:00", contacts: 2, mailable: 1 };
+
+const CONTACT = {
+  id: "ct_1",
+  audience_id: "aud_1",
+  email: "ada@example.com",
+  first_name: "Ada",
+  last_name: null,
+  fields: { plan: "pro" },
+  status: "subscribed",
+  suppressed: false,
+  mailable: true,
+  source: "api",
+  created_at: "2026-10-19T10:00:00",
+  unsubscribed_at: null,
+};
+
 const ERRORS = {
+  send_only: [403, "insufficient_scope", "This API key can only send email. Create a key with Full access to manage audiences and contacts."],
+  unsubscribed: [409, "contact_unsubscribed", "This person unsubscribed, so they can't be subscribed again by you."],
   unauthorized: [401, "invalid_api_key", "This API key doesn't exist or has been revoked."],
   billing: [402, "billing_restricted", "Mailhive Send is paused until a payment is sorted."],
   forbidden: [403, "send_not_activated", "Mailhive Send isn't turned on for this organization."],
@@ -59,7 +78,39 @@ export function createMockServer() {
     send(res, status, { error: { code, message, details, request_id: requestId } }, headers);
   }
 
+  function successContacts(res, route, id, body) {
+    switch (route) {
+      case "audiences.list":
+        return send(res, 200, [AUDIENCE]);
+      case "audiences.create":
+        return send(res, 201, AUDIENCE);
+      case "audiences.rename":
+        return send(res, 200, { id: "aud_1", name: body?.name ?? AUDIENCE.name });
+      case "contacts.list":
+        return send(res, 200, { items: [CONTACT], page: 1, page_size: 20, total: 1 });
+      case "contacts.add":
+        return send(res, 201, { ...CONTACT, email: body?.email ?? CONTACT.email });
+      case "contacts.upsert":
+        return send(res, 201, { ...CONTACT, email: body?.email ?? CONTACT.email });
+      case "contacts.batch":
+        return send(res, 200, {
+          created: (body?.contacts ?? []).length,
+          updated: 0,
+          failed: 0,
+          results: (body?.contacts ?? []).map((c, i) => ({ index: i, email: c.email, ok: true, created: true, contact: { ...CONTACT, email: c.email } })),
+        });
+      case "contacts.get":
+        return id === "ct_1" ? send(res, 200, { ...CONTACT, history: [EMAIL] }) : error(res, 404, "not_found", "Contact not found.");
+      case "contacts.update":
+        return id === "ct_1" ? send(res, 200, { ...CONTACT, ...(body?.unsubscribe ? { status: "unsubscribed", mailable: false } : {}) }) : error(res, 404, "not_found", "Contact not found.");
+      case "contacts.delete":
+        return id === "ct_1" ? send(res, 204, "") : error(res, 404, "not_found", "Contact not found.");
+    }
+    return error(res, 404, "not_found", "Not Found");
+  }
+
   function success(res, route, id, body) {
+    if (route.includes(".")) return successContacts(res, route, id, body);
     if (route === "send") return send(res, 200, accepted(1));
     if (route === "batch") return send(res, 200, { data: (body?.emails ?? []).map((_, i) => accepted(i + 1)) });
     if (id === "msg_1") return send(res, 200, EMAIL);
@@ -86,7 +137,14 @@ export function createMockServer() {
       } catch {
         body = raw;
       }
-      requests.push({ method: req.method, path: url.pathname, headers: req.headers, body, at: Date.now() });
+      requests.push({
+        method: req.method,
+        path: url.pathname,
+        query: Object.fromEntries(url.searchParams),
+        headers: req.headers,
+        body,
+        at: Date.now(),
+      });
 
       let route = null;
       let id = null;
@@ -95,6 +153,19 @@ export function createMockServer() {
       else if (req.method === "GET" && url.pathname.startsWith("/v1/send/emails/")) {
         route = "get";
         id = decodeURIComponent(url.pathname.slice("/v1/send/emails/".length));
+      }
+      const audiencePath = url.pathname.match(/^\/v1\/send\/audiences(?:\/([^/]+)(?:\/(contacts)(?:\/(batch))?)?)?$/);
+      const contactPath = url.pathname.match(/^\/v1\/send\/contacts\/([^/]+)$/);
+      if (audiencePath) {
+        const [, audience, contacts, batch] = audiencePath;
+        const m = req.method;
+        if (!audience) route = m === "GET" ? "audiences.list" : m === "POST" ? "audiences.create" : null;
+        else if (!contacts) route = m === "PATCH" ? "audiences.rename" : null;
+        else if (batch) route = m === "POST" ? "contacts.batch" : null;
+        else route = m === "GET" ? "contacts.list" : m === "POST" ? "contacts.add" : m === "PUT" ? "contacts.upsert" : null;
+      } else if (contactPath) {
+        id = decodeURIComponent(contactPath[1]);
+        route = { GET: "contacts.get", PATCH: "contacts.update", DELETE: "contacts.delete" }[req.method] ?? null;
       }
       if (route === null) return error(res, 404, "not_found", "Not Found");
 

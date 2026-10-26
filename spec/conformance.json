@@ -141,5 +141,387 @@
         "error": { "kind": "validation", "status": 422, "code": "validation_error", "hasDetails": true }
       }
     }
-  ]
+  ],
+  "contactCases": {
+    "description": "Audience and contact calls. Same mock server and rules as `cases`; run only by SDKs that implement the contacts API. `args` are passed in the SDK's own style. Each SDK names the operations in its own idiom (audiences.list is client.audiences.list(), contacts.upsertBatch is upsert_batch, and so on).",
+    "audienceId": "aud_1",
+    "contact": {
+      "email": "ada@example.com",
+      "first_name": "Ada",
+      "fields": {
+        "plan": "pro"
+      }
+    },
+    "confirmation": {
+      "from": "Acme <news@acme.com>",
+      "subject": "Confirm your subscription"
+    },
+    "cases": [
+      {
+        "name": "lists audiences",
+        "key": "mhs_ok",
+        "call": "audiences.list",
+        "expect": {
+          "attempts": 1,
+          "resultCount": 1,
+          "resultFields": {
+            "0.id": "aud_1",
+            "0.name": "Newsletter"
+          },
+          "request": {
+            "method": "GET",
+            "path": "/v1/send/audiences",
+            "noIdempotencyKey": true
+          }
+        }
+      },
+      {
+        "name": "creates an audience",
+        "key": "mhs_ok",
+        "call": "audiences.create",
+        "args": {
+          "name": "Newsletter"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "id": "aud_1",
+            "name": "Newsletter"
+          },
+          "request": {
+            "method": "POST",
+            "path": "/v1/send/audiences",
+            "body": {
+              "name": "Newsletter"
+            }
+          }
+        }
+      },
+      {
+        "name": "renames an audience",
+        "key": "mhs_ok",
+        "call": "audiences.rename",
+        "args": {
+          "id": "aud_1",
+          "name": "Weekly"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "id": "aud_1",
+            "name": "Weekly"
+          },
+          "request": {
+            "method": "PATCH",
+            "path": "/v1/send/audiences/aud_1",
+            "body": {
+              "name": "Weekly"
+            },
+            "noIdempotencyKey": true
+          }
+        }
+      },
+      {
+        "name": "adds a contact",
+        "key": "mhs_ok",
+        "call": "contacts.add",
+        "args": {
+          "contact": "contact"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "id": "ct_1",
+            "email": "ada@example.com",
+            "status": "subscribed",
+            "mailable": true
+          },
+          "request": {
+            "method": "POST",
+            "path": "/v1/send/audiences/aud_1/contacts",
+            "body": "contact"
+          }
+        }
+      },
+      {
+        "name": "adds or updates a contact with PUT and no idempotency key",
+        "key": "mhs_ok",
+        "call": "contacts.upsert",
+        "args": {
+          "contact": "contact"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "id": "ct_1",
+            "email": "ada@example.com"
+          },
+          "request": {
+            "method": "PUT",
+            "path": "/v1/send/audiences/aud_1/contacts",
+            "body": "contact",
+            "noIdempotencyKey": true,
+            "contentType": "application/json",
+            "authorization": "Bearer mhs_ok"
+          }
+        }
+      },
+      {
+        "name": "asks for double opt-in",
+        "key": "mhs_ok",
+        "call": "contacts.upsert",
+        "args": {
+          "contact": "contact",
+          "doubleOptIn": "confirmation"
+        },
+        "expect": {
+          "attempts": 1,
+          "request": {
+            "method": "PUT",
+            "path": "/v1/send/audiences/aud_1/contacts",
+            "bodyIncludes": {
+              "email": "ada@example.com",
+              "double_opt_in": {
+                "from": "Acme <news@acme.com>",
+                "subject": "Confirm your subscription"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "adds or updates a batch",
+        "key": "mhs_ok",
+        "call": "contacts.upsertBatch",
+        "args": {
+          "contacts": [
+            "contact",
+            {
+              "email": "bo@example.com"
+            }
+          ]
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "created": 2,
+            "updated": 0,
+            "failed": 0,
+            "results.1.email": "bo@example.com",
+            "results.1.ok": true
+          },
+          "request": {
+            "method": "POST",
+            "path": "/v1/send/audiences/aud_1/contacts/batch",
+            "bodyContactCount": 2
+          }
+        }
+      },
+      {
+        "name": "lists contacts with filters in the query string",
+        "key": "mhs_ok",
+        "call": "contacts.list",
+        "args": {
+          "email": "ada@example.com",
+          "status": "subscribed",
+          "page": 2,
+          "pageSize": 50
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "total": 1,
+            "items.0.id": "ct_1"
+          },
+          "request": {
+            "method": "GET",
+            "path": "/v1/send/audiences/aud_1/contacts",
+            "noIdempotencyKey": true,
+            "query": {
+              "email": "ada@example.com",
+              "status": "subscribed",
+              "page": "2",
+              "page_size": "50"
+            }
+          }
+        }
+      },
+      {
+        "name": "lists contacts with no filters",
+        "key": "mhs_ok",
+        "call": "contacts.list",
+        "args": {},
+        "expect": {
+          "attempts": 1,
+          "request": {
+            "method": "GET",
+            "path": "/v1/send/audiences/aud_1/contacts",
+            "query": {}
+          }
+        }
+      },
+      {
+        "name": "gets a contact",
+        "key": "mhs_ok",
+        "call": "contacts.get",
+        "args": {
+          "id": "ct_1"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "id": "ct_1",
+            "history.0.id": "msg_1"
+          },
+          "request": {
+            "method": "GET",
+            "path": "/v1/send/contacts/ct_1",
+            "noIdempotencyKey": true
+          }
+        }
+      },
+      {
+        "name": "updates a contact",
+        "key": "mhs_ok",
+        "call": "contacts.update",
+        "args": {
+          "id": "ct_1",
+          "changes": {
+            "first_name": "Ada",
+            "fields": {
+              "plan": "business"
+            }
+          }
+        },
+        "expect": {
+          "attempts": 1,
+          "request": {
+            "method": "PATCH",
+            "path": "/v1/send/contacts/ct_1",
+            "body": {
+              "first_name": "Ada",
+              "fields": {
+                "plan": "business"
+              }
+            },
+            "noIdempotencyKey": true
+          }
+        }
+      },
+      {
+        "name": "unsubscribes a contact",
+        "key": "mhs_ok",
+        "call": "contacts.unsubscribe",
+        "args": {
+          "id": "ct_1"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultFields": {
+            "status": "unsubscribed",
+            "mailable": false
+          },
+          "request": {
+            "method": "PATCH",
+            "path": "/v1/send/contacts/ct_1",
+            "body": {
+              "unsubscribe": true
+            }
+          }
+        }
+      },
+      {
+        "name": "deletes a contact and returns nothing",
+        "key": "mhs_ok",
+        "call": "contacts.delete",
+        "args": {
+          "id": "ct_1"
+        },
+        "expect": {
+          "attempts": 1,
+          "resultIsEmpty": true,
+          "request": {
+            "method": "DELETE",
+            "path": "/v1/send/contacts/ct_1",
+            "noIdempotencyKey": true
+          }
+        }
+      },
+      {
+        "name": "retries a rate limit on a PUT",
+        "key": "mhs_rate_limited_once",
+        "call": "contacts.upsert",
+        "args": {
+          "contact": "contact"
+        },
+        "expect": {
+          "attempts": 2,
+          "minElapsedMs": 900,
+          "resultFields": {
+            "id": "ct_1"
+          }
+        }
+      },
+      {
+        "name": "retries a server error on a DELETE",
+        "key": "mhs_server_error_once",
+        "call": "contacts.delete",
+        "args": {
+          "id": "ct_1"
+        },
+        "expect": {
+          "attempts": 2,
+          "resultIsEmpty": true
+        }
+      },
+      {
+        "name": "maps insufficient_scope to a permission error",
+        "key": "mhs_send_only",
+        "call": "contacts.add",
+        "args": {
+          "contact": "contact"
+        },
+        "expect": {
+          "attempts": 1,
+          "error": {
+            "kind": "permission",
+            "status": 403,
+            "code": "insufficient_scope"
+          }
+        }
+      },
+      {
+        "name": "maps contact_unsubscribed to a conflict and does not retry it",
+        "key": "mhs_unsubscribed",
+        "call": "contacts.upsert",
+        "args": {
+          "contact": "contact"
+        },
+        "expect": {
+          "attempts": 1,
+          "error": {
+            "kind": "conflict",
+            "status": 409,
+            "code": "contact_unsubscribed"
+          }
+        }
+      },
+      {
+        "name": "maps a missing contact to not found",
+        "key": "mhs_ok",
+        "call": "contacts.get",
+        "args": {
+          "id": "missing"
+        },
+        "expect": {
+          "attempts": 1,
+          "error": {
+            "kind": "not_found",
+            "status": 404,
+            "code": "not_found"
+          }
+        }
+      }
+    ]
+  }
 }

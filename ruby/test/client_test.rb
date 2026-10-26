@@ -14,7 +14,7 @@ class ClientTest < Minitest::Test
 
   def test_version
     assert_match(/\A\d+\.\d+\.\d+\z/, Mailhive::VERSION)
-    assert_equal "0.1.0", Mailhive::VERSION
+    assert_equal "0.2.0", Mailhive::VERSION
   end
 
   def test_reads_the_key_and_base_url_from_the_environment
@@ -67,7 +67,7 @@ class ClientTest < Minitest::Test
     result = client(transport).emails.send({ "from" => "a@acme.com", "to" => "b@example.com", "subject" => "Hi", "text" => "Hello" })
     assert_equal ACCEPTED, result
     headers = transport.requests[0][:headers]
-    assert_match(%r{\Amailhive-ruby/0\.1\.0 ruby/\d+\.\d+}, headers["User-Agent"])
+    assert_match(%r{\Amailhive-ruby/0\.2\.0 ruby/\d+\.\d+}, headers["User-Agent"])
     assert_equal "application/json", headers["Content-Type"]
     assert_equal "application/json", headers["Accept"]
     assert_match(/\A\h{8}-\h{4}-4\h{3}-[89ab]\h{3}-\h{12}\z/, headers["Idempotency-Key"])
