@@ -6,7 +6,7 @@ require "mail"
 class ActionMailerDeliveryMethodTest < Minitest::Test
   include TestSupport
 
-  ACCEPTED = { id: "msg_7", status: "queued", suppressed: [], test: true }.freeze
+  ACCEPTED = { id: "msg_7", status: "queued", suppressed: [], rejected: {}, test: true }.freeze
   PDF = "%PDF-1.4\x00\x01\xFF binary".b
 
   def delivery(transport)
@@ -150,7 +150,7 @@ if defined?(ActionMailer::Base)
     def setup
       Mailhive::ActionMailer.install
       Mailhive::ActionMailer.install # twice is fine
-      @transport = TestSupport::FakeTransport.json(200, { id: "msg_rails", status: "queued", suppressed: [], test: false })
+      @transport = TestSupport::FakeTransport.json(200, { id: "msg_rails", status: "queued", suppressed: [], rejected: {}, test: false })
       ActionMailer::Base.delivery_method = :mailhive
       ActionMailer::Base.mailhive_settings = { api_key: "mhs_rails", transport: @transport }
       ActionMailer::Base.perform_deliveries = true

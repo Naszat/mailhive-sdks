@@ -8,7 +8,9 @@ module Mailhive
       @client = client
     end
 
-    # Sends one email and returns the accepted email: {id:, status:, suppressed:, test:}.
+    # Sends one email and returns the accepted email: {id:, status:, suppressed:, rejected:, test:}.
+    # +rejected+ maps the addresses dropped before sending because they can't
+    # work (a mistyped, non-existent or mail-less domain) to the reason.
     #
     # Keys match the API reference exactly (symbols or strings): from, to,
     # cc, bcc, subject, html, text, template_id, variables, reply_to,
@@ -31,6 +33,18 @@ module Mailhive
     # One email, with its status ("delivered", "bounced", …).
     def get(id)
       @client.request("GET", "/send/emails/#{self.class.escape(id)}")
+    end
+
+    # The checks sending applies, for a form to run while the person can
+    # still fix a typo: syntax, mistyped and non-existent domains, domains
+    # with no mail server, and your suppression list. Nothing is sent or
+    # stored. Returns one hash per address, in order:
+    # { email:, normalized:, valid:, reason:, message:, suggestion: }.
+    #
+    #   client.emails.validate(["ada@gmial.com"])
+    #   # => [{ email: "ada@gmial.com", valid: false, reason: "domain_typo", suggestion: "ada@gmail.com", … }]
+    def validate(emails)
+      @client.request("POST", "/send/emails/validate", { emails: Array(emails).map(&:to_s) })[:data]
     end
 
     def inspect

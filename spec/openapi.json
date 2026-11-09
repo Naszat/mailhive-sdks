@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mailhive Send API",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Send transactional email from your verified domains, and manage the audiences and contacts your broadcasts go to. Guides: https://mailhive.africa/docs",
     "contact": {
       "name": "Mailhive",
@@ -181,6 +181,81 @@
           },
           "409": {
             "$ref": "#/components/responses/E409"
+          },
+          "422": {
+            "$ref": "#/components/responses/E422"
+          },
+          "429": {
+            "$ref": "#/components/responses/E429"
+          },
+          "503": {
+            "$ref": "#/components/responses/E503"
+          }
+        }
+      }
+    },
+    "/send/emails/validate": {
+      "post": {
+        "operationId": "validateRecipients",
+        "summary": "Check addresses before sending",
+        "tags": [
+          "Emails"
+        ],
+        "externalDocs": {
+          "url": "https://mailhive.africa/docs/api/validate-recipients"
+        },
+        "description": "Runs the checks sending applies, without sending or storing anything: syntax, mistyped domains (gmial.com), domains that don't exist or have no mail server, and your suppression list. Call it while the person can still fix a typo, such as on a signup or checkout form. Unknown answers (a DNS timeout) count as valid.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRecipientsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One verdict per address, in the order given",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RecipientVerdict"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "RateLimit-Limit": {
+                "$ref": "#/components/headers/RateLimit-Limit"
+              },
+              "RateLimit-Remaining": {
+                "$ref": "#/components/headers/RateLimit-Remaining"
+              },
+              "RateLimit-Reset": {
+                "$ref": "#/components/headers/RateLimit-Reset"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/E401"
+          },
+          "402": {
+            "$ref": "#/components/responses/E402"
+          },
+          "403": {
+            "$ref": "#/components/responses/E403"
           },
           "422": {
             "$ref": "#/components/responses/E422"
@@ -1324,6 +1399,7 @@
           "id",
           "status",
           "suppressed",
+          "rejected",
           "test"
         ],
         "properties": {
@@ -1336,7 +1412,8 @@
             "enum": [
               "queued",
               "suppressed"
-            ]
+            ],
+            "description": "queued if it will be sent, or suppressed if no recipient was left after the suppression list and the recipient checks."
           },
           "suppressed": {
             "type": "array",
@@ -1345,9 +1422,96 @@
             },
             "description": "Recipients dropped because they're on the suppression list."
           },
+          "rejected": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "invalid_syntax",
+                "domain_typo",
+                "domain_not_found",
+                "no_mail_server"
+              ]
+            },
+            "description": "Recipients dropped before sending because the address can't work, keyed by address: invalid_syntax, domain_typo (gmial.com), domain_not_found, or no_mail_server. They never reach the sending engine, so they can't bounce."
+          },
           "test": {
             "type": "boolean",
             "description": "True when sent with a test key (mhs_test_…): delivery is simulated and nothing is billed."
+          }
+        }
+      },
+      "ValidateRecipientsRequest": {
+        "type": "object",
+        "required": [
+          "emails"
+        ],
+        "properties": {
+          "emails": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string"
+            },
+            "description": "Addresses to check, as typed: a bare address, or with a display name (Ada <ada@example.com>)."
+          }
+        }
+      },
+      "RecipientVerdict": {
+        "type": "object",
+        "required": [
+          "email",
+          "normalized",
+          "valid",
+          "reason",
+          "message",
+          "suggestion"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "The address as given."
+          },
+          "normalized": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The bare, lowercased address, or null when there isn't one."
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "False when sending to this address would be refused."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "invalid_syntax",
+              "domain_typo",
+              "domain_not_found",
+              "no_mail_server",
+              "suppressed",
+              null
+            ],
+            "description": "Why it's invalid: invalid_syntax, domain_typo, domain_not_found, no_mail_server, or suppressed (on your suppression list). Null when valid."
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The reason in plain words, fit to show the person typing the address."
+          },
+          "suggestion": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For domain_typo, the address that was probably meant (ada@gmail.com for ada@gmial.com)."
           }
         }
       },
@@ -1410,6 +1574,19 @@
             "items": {
               "type": "string"
             }
+          },
+          "rejected": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "invalid_syntax",
+                "domain_typo",
+                "domain_not_found",
+                "no_mail_server"
+              ]
+            },
+            "description": "Recipients dropped before sending because the address can't work, keyed by address: invalid_syntax, domain_typo (gmial.com), domain_not_found, or no_mail_server. They never reach the sending engine, so they can't bounce."
           },
           "tags": {
             "type": "object",

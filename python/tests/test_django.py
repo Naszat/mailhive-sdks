@@ -28,7 +28,7 @@ def api(monkeypatch):
     def handler(request):
         body = json.loads(request.content)
         sent.append({"body": body, "headers": dict(request.headers)})
-        return httpx.Response(200, json={"id": f"m{len(sent)}", "status": "queued", "suppressed": [], "test": False})
+        return httpx.Response(200, json={"id": f"m{len(sent)}", "status": "queued", "suppressed": [], "rejected": {}, "test": False})
 
     real = client_module.httpx.Client
     monkeypatch.setattr(client_module.httpx, "Client", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))

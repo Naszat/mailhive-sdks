@@ -49,7 +49,7 @@ final class LaravelIntegrationTest extends TestCase
         $app['config']->set('mail.mailers.mailhive', ['transport' => 'mailhive']);
         $app['config']->set('mail.from', ['address' => 'hello@acme.com', 'name' => 'Acme']);
         $app['config']->set('services.mailhive', ['key' => 'mhs_laravel']);
-        $this->api = FakeTransport::json(200, ['id' => 'm7', 'status' => 'queued', 'suppressed' => [], 'test' => false]);
+        $this->api = FakeTransport::json(200, ['id' => 'm7', 'status' => 'queued', 'suppressed' => [], 'rejected' => [], 'test' => false]);
         // The container's client talks to the fake API.
         $app->singleton(Mailhive::class, fn () => new Mailhive('mhs_laravel', ['transport' => $this->api]));
     }

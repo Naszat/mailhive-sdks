@@ -18,7 +18,9 @@ final class Emails
      *
      * @param array<string, mixed> $email
      * @param array{idempotency_key?: string} $options
-     * @return array{id: string, status: string, suppressed: list<string>, test: bool}
+     * @return array{id: string, status: string, suppressed: list<string>, rejected: array<string, string>, test: bool}
+     *   'rejected' maps each address dropped before sending to why it can't work
+     *   (invalid_syntax, domain_typo, domain_not_found, no_mail_server); it's [] when none were.
      */
     public function send(array $email, array $options = []): array
     {
@@ -30,7 +32,7 @@ final class Emails
      *
      * @param list<array<string, mixed>> $emails
      * @param array{idempotency_key?: string} $options
-     * @return list<array{id: string, status: string, suppressed: list<string>, test: bool}>
+     * @return list<array{id: string, status: string, suppressed: list<string>, rejected: array<string, string>, test: bool}>
      */
     public function sendBatch(array $emails, array $options = []): array
     {
@@ -47,6 +49,22 @@ final class Emails
     public function get(string $id): array
     {
         return $this->client->request('GET', '/send/emails/' . rawurlencode($id));
+    }
+
+    /**
+     * The same checks sending applies, for a form to run while the person
+     * can still fix a typo: syntax, mistyped domains (gmial.com, with the
+     * address probably meant in 'suggestion'), domains that don't exist or
+     * have no mail server, and your suppression list. Nothing is sent or
+     * stored. Up to 100 addresses, as typed; one verdict each, in order.
+     *
+     * @param list<string> $emails
+     * @return list<array{email: string, normalized: ?string, valid: bool, reason: ?string, message: ?string, suggestion: ?string}>
+     */
+    public function validate(array $emails): array
+    {
+        $response = $this->client->request('POST', '/send/emails/validate', ['emails' => array_values($emails)]);
+        return $response['data'];
     }
 
     /**

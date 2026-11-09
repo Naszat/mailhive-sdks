@@ -16,7 +16,7 @@ final class SymfonyTransportTest extends TestCase
 {
     public function testSendsASymfonyEmailThroughTheApi(): void
     {
-        $transport = FakeTransport::json(200, ['id' => 'm42', 'status' => 'queued', 'suppressed' => [], 'test' => false]);
+        $transport = FakeTransport::json(200, ['id' => 'm42', 'status' => 'queued', 'suppressed' => [], 'rejected' => [], 'test' => false]);
         $mailer = new MailhiveTransport(new Mailhive('mhs_x', ['transport' => $transport]));
 
         $email = (new Email())

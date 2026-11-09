@@ -64,6 +64,15 @@ const accepted = await mailhive.emails.sendBatch([email1, email2]);
 const email = await mailhive.emails.get(id); // email.status: "delivered", "bounced", …
 ```
 
+### Check addresses before sending
+
+Addresses that can't work — a mistyped domain, one that doesn't exist, or one with no mail server — are dropped before sending and listed in the send result's `rejected` (address → reason), so they never bounce. To catch them while the person can still fix the typo, run the same checks on your form:
+
+```ts
+const verdicts = await mailhive.emails.validate(["ada@gmial.com"]);
+// [{ email: "ada@gmial.com", valid: false, reason: "domain_typo", suggestion: "ada@gmail.com", message: "The domain looks mistyped." }]
+```
+
 ## Audiences and contacts
 
 With an API key that has **Full access**, keep an audience in step with your app or CRM:

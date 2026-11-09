@@ -85,9 +85,37 @@ type AcceptedEmail struct {
 	// Suppressed lists recipients dropped because they're on the
 	// suppression list.
 	Suppressed []string `json:"suppressed"`
+	// Rejected maps recipients dropped before sending because the address
+	// can't work (a mistyped, non-existent or mail-less domain) to the
+	// reason: invalid_syntax, domain_typo, domain_not_found or
+	// no_mail_server. They never reach the sending engine, so they can't
+	// bounce. Empty when every recipient passed.
+	Rejected map[string]string `json:"rejected"`
 	// Test is true when sent with a test key (mhs_test_…): delivery is
 	// simulated and nothing is billed.
 	Test bool `json:"test"`
+}
+
+// RecipientVerdict is the API's answer about one address passed to
+// Validate. Fields the API returns as null are empty strings.
+type RecipientVerdict struct {
+	// Email is the address as given.
+	Email string `json:"email"`
+	// Normalized is the bare, lowercased address, or empty when there
+	// isn't one.
+	Normalized string `json:"normalized"`
+	// Valid is false when sending to this address would be refused.
+	Valid bool `json:"valid"`
+	// Reason is why it's invalid: invalid_syntax, domain_typo,
+	// domain_not_found, no_mail_server or suppressed (on your suppression
+	// list). Empty when valid.
+	Reason string `json:"reason"`
+	// Message is the reason in plain words, fit to show the person typing
+	// the address.
+	Message string `json:"message"`
+	// Suggestion is, for domain_typo, the address that was probably meant
+	// (ada@gmail.com for ada@gmial.com).
+	Suggestion string `json:"suggestion"`
 }
 
 // Email is a sent email and its delivery status. Fields the API returns as
@@ -98,14 +126,17 @@ type Email struct {
 	// suppressed or failed.
 	Status string `json:"status"`
 	// Stream is transactional or broadcast.
-	Stream     string            `json:"stream"`
-	Test       bool              `json:"test"`
-	From       string            `json:"from"`
-	To         []string          `json:"to"`
-	Cc         []string          `json:"cc"`
-	Bcc        []string          `json:"bcc"`
-	Subject    string            `json:"subject"`
-	Suppressed []string          `json:"suppressed"`
+	Stream     string   `json:"stream"`
+	Test       bool     `json:"test"`
+	From       string   `json:"from"`
+	To         []string `json:"to"`
+	Cc         []string `json:"cc"`
+	Bcc        []string `json:"bcc"`
+	Subject    string   `json:"subject"`
+	Suppressed []string `json:"suppressed"`
+	// Rejected maps recipients dropped before sending because the address
+	// can't work to the reason; see AcceptedEmail.Rejected.
+	Rejected   map[string]string `json:"rejected"`
 	Tags       map[string]string `json:"tags"`
 	TemplateID string            `json:"template_id"`
 	// TemplateVersion is 0 when the email wasn't sent from a template.
@@ -161,6 +192,28 @@ func (s *EmailsService) Get(ctx context.Context, id string) (*Email, error) {
 		return nil, err
 	}
 	return &out, nil
+}
+
+// Validate runs the checks sending applies, without sending or storing
+// anything: syntax, mistyped domains (gmial.com), domains that don't exist
+// or have no mail server, and your suppression list. Call it while the
+// person can still fix a typo, such as on a signup or checkout form. One
+// verdict per address, in the order given. An unknown answer (a DNS
+// timeout) counts as valid.
+func (s *EmailsService) Validate(ctx context.Context, emails []string) ([]RecipientVerdict, error) {
+	if len(emails) == 0 {
+		return nil, errors.New("mailhive: Validate needs at least one address")
+	}
+	body := struct {
+		Emails []string `json:"emails"`
+	}{emails}
+	var out struct {
+		Data []RecipientVerdict `json:"data"`
+	}
+	if err := s.client.do(ctx, http.MethodPost, "/send/emails/validate", body, "", &out); err != nil {
+		return nil, err
+	}
+	return out.Data, nil
 }
 
 // escapePathSegment percent-encodes everything except unreserved

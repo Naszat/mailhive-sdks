@@ -35,6 +35,18 @@ client.emails.send_batch([email1, email2])   # up to 100; all accepted or none
 client.emails.get(email_id)                  # status: "delivered", "bounced", …
 ```
 
+### Check addresses before sending
+
+Addresses that can't work — a mistyped domain such as `gmial.com`, a domain that doesn't exist or has no mail server — are dropped before sending and listed in the result's `rejected` (address → reason), so they never bounce. To catch them while the person can still fix the typo, run the same checks from your form:
+
+```python
+verdicts = client.emails.validate(["ada@gmial.com", "grace@example.com"])
+# [{"email": "ada@gmial.com", "valid": False, "reason": "domain_typo", "suggestion": "ada@gmail.com",
+#   "message": "The domain looks mistyped.", ...}, {"email": "grace@example.com", "valid": True, ...}]
+```
+
+Up to 100 addresses per call; `reason` is one of `invalid_syntax`, `domain_typo`, `domain_not_found`, `no_mail_server` or `suppressed`. Nothing is sent or stored.
+
 ### Async
 
 ```python

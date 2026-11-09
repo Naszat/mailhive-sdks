@@ -46,6 +46,23 @@ public final class Emails {
         return Json.MAPPER.convertValue(response.path("data"), new TypeReference<List<AcceptedEmail>>() {});
     }
 
+    /**
+     * Runs the checks sending applies, without sending or storing anything: syntax, mistyped domains
+     * (gmial.com), domains that don't exist or have no mail server, and your suppression list. Call it
+     * while the person can still fix a typo, such as on a signup or checkout form. One verdict per
+     * address, in the order given; up to 100 addresses per call.
+     */
+    public List<RecipientVerdict> validate(List<String> emails) {
+        Objects.requireNonNull(emails, "emails");
+        ObjectNode body = Json.MAPPER.createObjectNode();
+        ArrayNode list = body.putArray("emails");
+        for (String email : emails) {
+            list.add(email);
+        }
+        JsonNode response = transport.request("POST", "/send/emails/validate", body, null);
+        return Json.MAPPER.convertValue(response.path("data"), new TypeReference<List<RecipientVerdict>>() {});
+    }
+
     /** Gets an email and its latest status. */
     public Email get(String id) {
         Objects.requireNonNull(id, "id");

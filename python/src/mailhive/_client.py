@@ -26,6 +26,7 @@ from ._types import (
     ContactUpdate,
     DoubleOptIn,
     Email,
+    RecipientVerdict,
     SendEmailParams,
 )
 from ._version import __version__
@@ -154,6 +155,14 @@ class Emails:
     def get(self, email_id: str) -> Email:
         return self._client._request("GET", f"/send/emails/{_quote(email_id)}", None, None)
 
+    def validate(self, emails: List[str]) -> List[RecipientVerdict]:
+        """The same checks sending applies, for a form to run while the
+        person can still fix a typo: syntax, mistyped and non-existent
+        domains, domains with no mail server, and your suppression list.
+        Up to 100 addresses; one verdict each, in order. Nothing is sent
+        or stored."""
+        return self._client._request("POST", "/send/emails/validate", {"emails": list(emails)}, None)["data"]
+
 
 class AsyncEmails:
     def __init__(self, client: "AsyncMailhive") -> None:
@@ -172,6 +181,10 @@ class AsyncEmails:
 
     async def get(self, email_id: str) -> Email:
         return await self._client._request("GET", f"/send/emails/{_quote(email_id)}", None, None)
+
+    async def validate(self, emails: List[str]) -> List[RecipientVerdict]:
+        response = await self._client._request("POST", "/send/emails/validate", {"emails": list(emails)}, None)
+        return response["data"]
 
 
 def _quote(value: str) -> str:

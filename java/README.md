@@ -73,6 +73,21 @@ List<AcceptedEmail> accepted = client.emails().sendBatch(List.of(email1, email2)
 Email sent = client.emails().get(id);                                              // sent.status(): "delivered", "bounced", …
 ```
 
+An accepted email lists recipients that were left out: `suppressed()` for addresses on your suppression list, and `rejected()` (address → reason) for addresses that can't work, such as a mistyped domain, so they never bounce.
+
+### Check addresses before sending
+
+The same checks, for a signup or checkout form while the person can still fix a typo. Nothing is sent or stored:
+
+```java
+List<RecipientVerdict> verdicts = client.emails().validate(List.of("ada@gmial.com"));
+RecipientVerdict verdict = verdicts.get(0);
+verdict.valid();      // false
+verdict.reason();     // "domain_typo" (or invalid_syntax, domain_not_found, no_mail_server, suppressed)
+verdict.suggestion(); // "ada@gmail.com"
+verdict.message();    // "The domain looks mistyped." — fit to show the person
+```
+
 ## Audiences and contacts
 
 With an API key that has **Full access**, keep an audience in step with your app or CRM:
