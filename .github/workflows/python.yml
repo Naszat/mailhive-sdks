@@ -12,7 +12,8 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # ubuntu-latest (26.04) no longer ships Python 3.9; pin the image while 3.9 is supported.
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
