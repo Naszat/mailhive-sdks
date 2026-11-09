@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 final class ClientTest extends TestCase
 {
-    private const ACCEPTED = ['id' => 'm1', 'status' => 'queued', 'suppressed' => [], 'test' => false];
+    private const ACCEPTED = ['id' => 'm1', 'status' => 'queued', 'suppressed' => [], 'rejected' => [], 'test' => false];
 
     protected function tearDown(): void
     {
@@ -107,6 +107,17 @@ final class ClientTest extends TestCase
         self::assertSame('{"fields":{}}', $transport->requests[1]['body']);
         $client->contacts->upsert('a1', ['email' => 'ada@example.com', 'fields' => ['plan' => 'pro']]);
         self::assertSame('{"email":"ada@example.com","fields":{"plan":"pro"}}', $transport->requests[2]['body']);
+    }
+
+    public function testValidatePostsTheAddressesAndUnwrapsTheVerdicts(): void
+    {
+        $verdict = ['email' => 'ada@gmial.com', 'normalized' => 'ada@gmial.com', 'valid' => false, 'reason' => 'domain_typo', 'message' => 'The domain looks mistyped.', 'suggestion' => 'ada@gmail.com'];
+        $transport = FakeTransport::json(200, ['data' => [$verdict]]);
+        $verdicts = (new Mailhive('mhs_x', ['transport' => $transport]))->emails->validate(['ada@gmial.com']);
+        self::assertSame([$verdict], $verdicts);
+        self::assertSame('POST', $transport->requests[0]['method']);
+        self::assertStringEndsWith('/send/emails/validate', $transport->requests[0]['url']);
+        self::assertSame(['emails' => ['ada@gmial.com']], $transport->lastBody());
     }
 
     public function testADeleteWithNoBodyReturnsNothing(): void

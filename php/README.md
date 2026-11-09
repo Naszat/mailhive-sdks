@@ -37,6 +37,17 @@ $mailhive->emails->sendBatch([$email1, $email2]); // up to 100; all accepted or 
 $mailhive->emails->get($id);                      // ['status' => 'delivered', …]
 ```
 
+The accepted email's `rejected` maps any address dropped before sending to why it can't work (`domain_typo`, `domain_not_found`, `no_mail_server`, `invalid_syntax`); such addresses never bounce.
+
+### Check addresses before sending
+
+Run the same checks on a form, while the person can still fix the typo. Nothing is sent or stored:
+
+```php
+$verdicts = $mailhive->emails->validate(['ada@gmial.com']);
+// [['email' => 'ada@gmial.com', 'valid' => false, 'reason' => 'domain_typo', 'suggestion' => 'ada@gmail.com', 'message' => 'The domain looks mistyped.', …]]
+```
+
 ## Audiences and contacts
 
 With an API key that has **Full access**, keep an audience in step with your app or CRM:
