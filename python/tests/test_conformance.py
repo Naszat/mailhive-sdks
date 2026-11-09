@@ -34,6 +34,8 @@ def run_sync(case, url):
             return client.emails.send(email, **options)
         if case["call"] == "emails.sendBatch":
             return client.emails.send_batch([email, email], **options)
+        if case["call"] == "emails.validate":
+            return client.emails.validate(case["emails"])
         return client.emails.get(case["id"])
 
 
@@ -46,6 +48,8 @@ def run_async(case, url):
                 return await client.emails.send(email, **options)
             if case["call"] == "emails.sendBatch":
                 return await client.emails.send_batch([email, email], **options)
+            if case["call"] == "emails.validate":
+                return await client.emails.validate(case["emails"])
             return await client.emails.get(case["id"])
 
     return asyncio.run(go())

@@ -32,6 +32,7 @@ from ._types import (
     ContactUpdate,
     DoubleOptIn,
     Email,
+    RecipientVerdict,
     SendEmailParams,
 )
 from ._version import __version__
@@ -56,6 +57,7 @@ __all__ = [
     "ContactUpdate",
     "DoubleOptIn",
     "Email",
+    "RecipientVerdict",
     "Mailhive",
     "MailhiveError",
     "NotFoundError",

@@ -44,10 +44,36 @@ SendEmailParams = TypedDict(
 
 class AcceptedEmail(TypedDict):
     id: str
+    #: "queued", or "suppressed" when no recipient was left after the
+    #: suppression list and the recipient checks.
     status: str
+    #: Recipients dropped because they're on the suppression list.
     suppressed: List[str]
+    #: Recipients dropped before sending because the address can't work,
+    #: keyed by address: "invalid_syntax", "domain_typo", "domain_not_found"
+    #: or "no_mail_server". They never reach the sending engine, so they
+    #: can't bounce. Empty when every recipient was fine.
+    rejected: Dict[str, str]
     #: True when sent with a test key (mhs_test_…): delivery is simulated.
     test: bool
+
+
+class RecipientVerdict(TypedDict):
+    """One result of ``emails.validate``."""
+
+    #: The address as given.
+    email: str
+    #: The bare, lowercased address, or None when there isn't one.
+    normalized: Optional[str]
+    #: False when sending to this address would be refused.
+    valid: bool
+    #: Why it's invalid: "invalid_syntax", "domain_typo", "domain_not_found",
+    #: "no_mail_server" or "suppressed" (on your suppression list). None when valid.
+    reason: Optional[str]
+    #: The reason in plain words, fit to show the person typing the address.
+    message: Optional[str]
+    #: For "domain_typo", the address that was probably meant (ada@gmail.com for ada@gmial.com).
+    suggestion: Optional[str]
 
 
 Email = TypedDict(
@@ -63,6 +89,7 @@ Email = TypedDict(
         "bcc": List[str],
         "subject": str,
         "suppressed": List[str],
+        "rejected": Dict[str, str],
         "tags": Dict[str, str],
         "template_id": Optional[str],
         "template_version": Optional[int],
