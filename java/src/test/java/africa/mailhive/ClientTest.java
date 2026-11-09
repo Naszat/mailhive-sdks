@@ -102,7 +102,7 @@ class ClientTest {
         List<String> auth = new ArrayList<>();
         String url = serve(exchange -> {
             auth.add(exchange.getRequestHeaders().getFirst("Authorization"));
-            respond(exchange, 200, "{\"id\":\"msg_1\",\"status\":\"queued\",\"suppressed\":[],\"test\":true}");
+            respond(exchange, 200, "{\"id\":\"msg_1\",\"status\":\"queued\",\"suppressed\":[],\"rejected\":{},\"test\":true}");
         });
         Mailhive client = Mailhive.builder().apiKey("mhs_explicit").baseUrl(url)
                 .environment(Map.of("MAILHIVE_API_KEY", "mhs_env")::get).build();
@@ -267,5 +267,27 @@ class ClientTest {
         assertEquals(List.of("/v1/send/emails/a%20b%2Fc"), paths);
         assertEquals("sent", email.status());
         assertEquals(1, email.other().get("brand_new_field"));
+    }
+
+    @Test
+    void validatePostsTheAddressesAndUnwrapsTheVerdicts() throws IOException {
+        List<String> paths = new ArrayList<>();
+        List<String> bodies = new ArrayList<>();
+        String url = serve(exchange -> {
+            paths.add(exchange.getRequestURI().getRawPath());
+            bodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            respond(exchange, 200, "{\"data\":[{\"email\":\"ada@gmial.com\",\"normalized\":\"ada@gmial.com\",\"valid\":false,"
+                    + "\"reason\":\"domain_typo\",\"message\":\"The domain looks mistyped.\",\"suggestion\":\"ada@gmail.com\"},"
+                    + "{\"email\":\"ok@example.com\",\"normalized\":\"ok@example.com\",\"valid\":true,\"reason\":null,\"message\":null,\"suggestion\":null}]}");
+        });
+        List<RecipientVerdict> verdicts = client(url).build().emails().validate(List.of("ada@gmial.com", "ok@example.com"));
+        assertEquals(List.of("/v1/send/emails/validate"), paths);
+        assertEquals("{\"emails\":[\"ada@gmial.com\",\"ok@example.com\"]}", bodies.get(0));
+        assertEquals(2, verdicts.size());
+        assertFalse(verdicts.get(0).valid());
+        assertEquals("domain_typo", verdicts.get(0).reason());
+        assertEquals("ada@gmail.com", verdicts.get(0).suggestion());
+        assertTrue(verdicts.get(1).valid());
+        assertNull(verdicts.get(1).reason());
     }
 }

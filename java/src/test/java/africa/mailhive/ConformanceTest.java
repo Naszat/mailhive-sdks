@@ -100,6 +100,11 @@ class ConformanceTest {
                 return client.emails().sendBatch(List.of(email, email), options);
             case "emails.get":
                 return client.emails().get(c.get("id").asText());
+            case "emails.validate": {
+                List<String> emails = new ArrayList<>();
+                c.get("emails").forEach(node -> emails.add(node.asText()));
+                return client.emails().validate(emails);
+            }
             default:
                 throw new IllegalArgumentException(c.get("call").asText());
         }
