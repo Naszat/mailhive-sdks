@@ -5,7 +5,7 @@ require "test_helper"
 class ClientTest < Minitest::Test
   include TestSupport
 
-  ACCEPTED = { id: "msg_1", status: "queued", suppressed: [], test: false }.freeze
+  ACCEPTED = { id: "msg_1", status: "queued", suppressed: [], rejected: {}, test: false }.freeze
 
   def client(transport, **options)
     sleeps = options.delete(:sleeps) || []
@@ -14,7 +14,7 @@ class ClientTest < Minitest::Test
 
   def test_version
     assert_match(/\A\d+\.\d+\.\d+\z/, Mailhive::VERSION)
-    assert_equal "0.2.0", Mailhive::VERSION
+    assert_equal "0.3.0", Mailhive::VERSION
   end
 
   def test_reads_the_key_and_base_url_from_the_environment
@@ -67,7 +67,7 @@ class ClientTest < Minitest::Test
     result = client(transport).emails.send({ "from" => "a@acme.com", "to" => "b@example.com", "subject" => "Hi", "text" => "Hello" })
     assert_equal ACCEPTED, result
     headers = transport.requests[0][:headers]
-    assert_match(%r{\Amailhive-ruby/0\.2\.0 ruby/\d+\.\d+}, headers["User-Agent"])
+    assert_match(%r{\Amailhive-ruby/0\.3\.0 ruby/\d+\.\d+}, headers["User-Agent"])
     assert_equal "application/json", headers["Content-Type"]
     assert_equal "application/json", headers["Accept"]
     assert_match(/\A\h{8}-\h{4}-4\h{3}-[89ab]\h{3}-\h{12}\z/, headers["Idempotency-Key"])
@@ -114,6 +114,17 @@ class ClientTest < Minitest::Test
     assert_equal %w[msg_1 msg_2], result.map { |e| e[:id] }
     assert_equal 2, transport.last_body["emails"].length
     assert_equal "batch-1", transport.requests[0][:headers]["Idempotency-Key"]
+  end
+
+  def test_validate_posts_the_addresses_and_unwraps_data
+    verdict = { email: "ada@gmial.com", normalized: "ada@gmial.com", valid: false, reason: "domain_typo",
+                message: "The domain looks mistyped.", suggestion: "ada@gmail.com" }
+    transport = FakeTransport.json(200, { data: [verdict] })
+    result = client(transport).emails.validate(["ada@gmial.com"])
+    assert_equal [verdict], result
+    assert_equal "POST", transport.requests[0][:method]
+    assert_equal "https://api.mailhive.africa/v1/send/emails/validate", transport.requests[0][:url]
+    assert_equal({ "emails" => ["ada@gmial.com"] }, transport.last_body)
   end
 
   def test_a_retry_after_over_60_seconds_gives_up_after_one_request
