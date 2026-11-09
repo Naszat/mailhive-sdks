@@ -13,7 +13,7 @@
       "call": "emails.send",
       "expect": {
         "attempts": 1,
-        "result": { "id": "msg_1", "status": "queued", "suppressed": [], "test": false },
+        "result": { "id": "msg_1", "status": "queued", "suppressed": [], "rejected": {}, "test": false },
         "request": {
           "method": "POST",
           "path": "/v1/send/emails",
@@ -39,8 +39,8 @@
       "expect": {
         "attempts": 1,
         "result": [
-          { "id": "msg_1", "status": "queued", "suppressed": [], "test": false },
-          { "id": "msg_2", "status": "queued", "suppressed": [], "test": false }
+          { "id": "msg_1", "status": "queued", "suppressed": [], "rejected": {}, "test": false },
+          { "id": "msg_2", "status": "queued", "suppressed": [], "rejected": {}, "test": false }
         ],
         "request": { "method": "POST", "path": "/v1/send/emails/batch", "bodyEmailCount": 2 }
       }
@@ -54,6 +54,25 @@
         "attempts": 1,
         "resultFields": { "id": "msg_1", "status": "delivered" },
         "request": { "method": "GET", "path": "/v1/send/emails/msg_1", "noIdempotencyKey": true }
+      }
+    },
+    {
+      "name": "checks addresses before sending, without sending anything",
+      "key": "mhs_ok",
+      "call": "emails.validate",
+      "emails": ["Ada <ada@example.com>", "ada@gmial.com", "not-an-email"],
+      "expect": {
+        "attempts": 1,
+        "result": [
+          { "email": "Ada <ada@example.com>", "normalized": "ada@example.com", "valid": true },
+          { "email": "ada@gmial.com", "normalized": "ada@gmial.com", "valid": false, "reason": "domain_typo", "message": "The domain looks mistyped.", "suggestion": "ada@gmail.com" },
+          { "email": "not-an-email", "valid": false, "reason": "invalid_syntax", "message": "This isn't a valid email address." }
+        ],
+        "request": {
+          "method": "POST",
+          "path": "/v1/send/emails/validate",
+          "body": { "emails": ["Ada <ada@example.com>", "ada@gmial.com", "not-an-email"] }
+        }
       }
     },
     {

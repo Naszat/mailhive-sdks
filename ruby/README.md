@@ -46,6 +46,17 @@ client.emails.send_batch([email1, email2]) # up to 100; all accepted or none. Re
 client.emails.get(email_id)                # {status: "delivered", …}
 ```
 
+The accepted email's `rejected` maps any address dropped before sending because it can't work (a mistyped, non-existent or mail-less domain) to the reason; those addresses never bounce.
+
+### Check addresses before sending
+
+Run the same checks on a form, while the person can still fix a typo. Nothing is sent or stored:
+
+```ruby
+client.emails.validate(["ada@gmial.com"])
+# => [{ email: "ada@gmial.com", normalized: "ada@gmial.com", valid: false, reason: "domain_typo", suggestion: "ada@gmail.com", message: "The domain looks mistyped." }]
+```
+
 `emails.send` sends an email: on that object, use `__send__` or `public_send` for Ruby's dynamic dispatch.
 
 ## Rails (ActionMailer)

@@ -13,7 +13,7 @@ def client_with(handler, **kwargs):
     return mailhive.Mailhive("mhs_x", http_client=httpx.Client(transport=httpx.MockTransport(handler)), **kwargs)
 
 
-ACCEPTED = {"id": "m1", "status": "queued", "suppressed": [], "test": False}
+ACCEPTED = {"id": "m1", "status": "queued", "suppressed": [], "rejected": {}, "test": False}
 
 
 def test_reads_the_key_and_base_url_from_the_environment(monkeypatch):
@@ -82,6 +82,24 @@ def test_every_error_is_a_mailhive_error():
     handler = lambda request: httpx.Response(404, json={"error": {"code": "not_found", "message": "Email not found."}})  # noqa: E731
     with pytest.raises(mailhive.MailhiveError):
         client_with(handler).emails.get("x")
+
+
+def test_validate_posts_the_addresses_and_unwraps_the_verdicts():
+    sent = {}
+    verdicts = [
+        {"email": "Ada <ada@example.com>", "normalized": "ada@example.com", "valid": True, "reason": None, "message": None, "suggestion": None},
+        {"email": "ada@gmial.com", "normalized": "ada@gmial.com", "valid": False, "reason": "domain_typo",
+         "message": "The domain looks mistyped.", "suggestion": "ada@gmail.com"},
+    ]
+
+    def handler(request):
+        sent.update(method=request.method, path=request.url.path, body=json.loads(request.content))
+        return httpx.Response(200, json={"data": verdicts})
+
+    result = client_with(handler).emails.validate(["Ada <ada@example.com>", "ada@gmial.com"])
+    assert sent == {"method": "POST", "path": "/v1/send/emails/validate", "body": {"emails": ["Ada <ada@example.com>", "ada@gmial.com"]}}
+    assert result == verdicts
+    assert result[1]["suggestion"] == "ada@gmail.com"
 
 
 def test_version_matches_the_package():

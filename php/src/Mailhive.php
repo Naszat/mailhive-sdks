@@ -27,7 +27,7 @@ use Mailhive\Http\TransportException;
  */
 final class Mailhive
 {
-    public const VERSION = '0.2.0';
+    public const VERSION = '0.3.0';
     public const DEFAULT_BASE_URL = 'https://api.mailhive.africa/v1';
     private const MAX_RETRY_AFTER = 60.0;
 

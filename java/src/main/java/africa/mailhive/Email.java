@@ -22,6 +22,7 @@ public final class Email {
     @JsonProperty("bcc") private List<String> bcc = Collections.emptyList();
     @JsonProperty("subject") private String subject;
     @JsonProperty("suppressed") private List<String> suppressed = Collections.emptyList();
+    @JsonProperty("rejected") private Map<String, String> rejected = Collections.emptyMap();
     @JsonProperty("tags") private Map<String, String> tags = Collections.emptyMap();
     @JsonProperty("template_id") private String templateId;
     @JsonProperty("template_version") private Integer templateVersion;
@@ -45,6 +46,8 @@ public final class Email {
     public List<String> bcc() { return bcc; }
     public String subject() { return subject; }
     public List<String> suppressed() { return suppressed; }
+    /** Recipients dropped before sending because the address can't work, keyed by address, with the reason. */
+    public Map<String, String> rejected() { return rejected; }
     public Map<String, String> tags() { return tags; }
     public String templateId() { return templateId; }
     public Integer templateVersion() { return templateVersion; }

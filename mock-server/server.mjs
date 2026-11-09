@@ -9,7 +9,33 @@
 import http from "node:http";
 import { pathToFileURL } from "node:url";
 
-const accepted = (n) => ({ id: `msg_${n}`, status: "queued", suppressed: [], test: false });
+const accepted = (n) => ({ id: `msg_${n}`, status: "queued", suppressed: [], rejected: {}, test: false });
+
+// The recipient checks `POST /send/emails/validate` runs, as the API does
+// them: a display name is stripped, the address is lowercased, and only a
+// definite problem is a verdict of invalid.
+const TYPOS = { "gmial.com": "gmail.com", "gmai.com": "gmail.com", "yaho.com": "yahoo.com", "hotmal.com": "hotmail.com" };
+const EXPLANATIONS = {
+  invalid_syntax: "This isn't a valid email address.",
+  domain_typo: "The domain looks mistyped.",
+  domain_not_found: "The domain doesn't exist.",
+  no_mail_server: "The domain doesn't accept email.",
+};
+function verdict(value) {
+  const given = String(value ?? "");
+  const angle = given.match(/<([^>]*)>/);
+  const addr = (angle ? angle[1] : given).trim().toLowerCase();
+  const invalid = (reason, normalized, suggestion = null) =>
+    ({ email: given, normalized, valid: false, reason, message: EXPLANATIONS[reason], suggestion });
+  const at = addr.lastIndexOf("@");
+  if (at < 1 || at === addr.length - 1 || /\s/.test(addr)) return invalid("invalid_syntax", null);
+  const [local, domain] = [addr.slice(0, at), addr.slice(at + 1)];
+  if (!domain.includes(".")) return invalid("invalid_syntax", null);
+  if (TYPOS[domain]) return invalid("domain_typo", addr, `${local}@${TYPOS[domain]}`);
+  if (domain.endsWith(".invalid")) return invalid("domain_not_found", addr);
+  if (domain.endsWith(".nomail.example")) return invalid("no_mail_server", addr);
+  return { email: given, normalized: addr, valid: true, reason: null, message: null, suggestion: null };
+}
 
 const EMAIL = {
   id: "msg_1",
@@ -22,6 +48,7 @@ const EMAIL = {
   bcc: [],
   subject: "Hi",
   suppressed: [],
+  rejected: {},
   tags: {},
   template_id: null,
   template_version: null,
@@ -113,6 +140,10 @@ export function createMockServer() {
     if (route.includes(".")) return successContacts(res, route, id, body);
     if (route === "send") return send(res, 200, accepted(1));
     if (route === "batch") return send(res, 200, { data: (body?.emails ?? []).map((_, i) => accepted(i + 1)) });
+    if (route === "validate") {
+      const emails = Array.isArray(body?.emails) ? body.emails : [body?.emails];
+      return send(res, 200, { data: emails.map(verdict) });
+    }
     if (id === "msg_1") return send(res, 200, EMAIL);
     return error(res, 404, "not_found", "Email not found.");
   }
@@ -150,6 +181,7 @@ export function createMockServer() {
       let id = null;
       if (req.method === "POST" && url.pathname === "/v1/send/emails") route = "send";
       else if (req.method === "POST" && url.pathname === "/v1/send/emails/batch") route = "batch";
+      else if (req.method === "POST" && url.pathname === "/v1/send/emails/validate") route = "validate";
       else if (req.method === "GET" && url.pathname.startsWith("/v1/send/emails/")) {
         route = "get";
         id = decodeURIComponent(url.pathname.slice("/v1/send/emails/".length));

@@ -34,11 +34,14 @@ export interface MailhiveTransportOptions extends MailhiveOptions {
   client?: Mailhive;
 }
 
-export interface SentInfo extends AcceptedEmail {
+export interface SentInfo extends Omit<AcceptedEmail, "rejected"> {
   messageId: string;
   envelope: { from: string; to: string[] };
   accepted: string[];
+  /** Recipients not sent to: on the suppression list, or an address that can't work. */
   rejected: string[];
+  /** Why each address that can't work was dropped (address → reason), from the API's `rejected`. */
+  rejectedReasons: Record<string, string>;
 }
 
 function format(address: Address): string {
@@ -120,15 +123,18 @@ export function mailhiveTransport(options: MailhiveTransportOptions = {}) {
         const recipients = [...bare(data.to), ...bare(data.cc), ...bare(data.bcc)];
         client.emails
           .send(request, mail.data.idempotencyKey ? { idempotencyKey: mail.data.idempotencyKey } : {})
-          .then((accepted) =>
+          .then((accepted) => {
+            // Suppressed (on the list) and rejected (the address can't work) both weren't sent to.
+            const dropped = new Set([...accepted.suppressed, ...Object.keys(accepted.rejected ?? {})].map((r) => r.toLowerCase()));
             callback(null, {
               ...accepted,
               messageId: accepted.id,
               envelope: { from: bare(data.from)[0] ?? "", to: recipients },
-              accepted: recipients.filter((r) => !accepted.suppressed.includes(r.toLowerCase())),
-              rejected: recipients.filter((r) => accepted.suppressed.includes(r.toLowerCase())),
-            }),
-          )
+              accepted: recipients.filter((r) => !dropped.has(r.toLowerCase())),
+              rejected: recipients.filter((r) => dropped.has(r.toLowerCase())),
+              rejectedReasons: accepted.rejected ?? {},
+            });
+          })
           .catch((error: Error) => callback(error));
       });
     },

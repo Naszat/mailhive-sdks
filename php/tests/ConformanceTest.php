@@ -47,6 +47,7 @@ final class ConformanceTest extends TestCase
                 'emails.send' => $client->emails->send($spec['email'], $options),
                 'emails.sendBatch' => $client->emails->sendBatch([$spec['email'], $spec['email']], $options),
                 'emails.get' => $client->emails->get($case['id']),
+                'emails.validate' => $client->emails->validate($case['emails']),
             };
         } catch (Exception\MailhiveException $caught) {
             $error = $caught;

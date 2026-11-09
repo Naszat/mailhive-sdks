@@ -64,6 +64,15 @@ Email sent = await client.Emails.GetAsync(accepted[0].Id); // sent.Status: "deli
 
 Every method takes a `CancellationToken`.
 
+### Check addresses before sending
+
+```csharp
+var verdicts = await client.Emails.ValidateAsync(new[] { "ada@gmial.com" });
+// verdicts[0].Valid == false, Reason "domain_typo", Suggestion "ada@gmail.com", Message "The domain looks mistyped."
+```
+
+The same checks run on every send: an address that can't work is left out and listed in the accepted email's `Rejected` (address → reason), so it never bounces.
+
 ## Audiences and contacts
 
 With an API key that has **Full access**, keep an audience in step with your app or CRM:

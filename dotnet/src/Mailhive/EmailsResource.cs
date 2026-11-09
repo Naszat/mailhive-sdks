@@ -57,6 +57,27 @@ namespace Mailhive
             return _client.RequestAsync<Email>(HttpMethod.Get, "/send/emails/" + Uri.EscapeDataString(id), null, null, cancellationToken);
         }
 
+        /// <summary>
+        /// Runs the checks sending applies, without sending or storing anything: syntax, mistyped domains (gmial.com),
+        /// domains that don't exist or have no mail server, and your suppression list. Call it while the person can
+        /// still fix a typo, such as on a signup or checkout form. An unknown answer (a DNS timeout) counts as valid.
+        /// </summary>
+        /// <param name="emails">Up to 100 addresses, as typed; a display name (<c>Ada &lt;ada@example.com&gt;</c>) is fine.</param>
+        /// <param name="cancellationToken">Cancels the call and its retries.</param>
+        /// <returns>One verdict per address, in the order given.</returns>
+        public async Task<IReadOnlyList<RecipientVerdict>> ValidateAsync(IEnumerable<string> emails, CancellationToken cancellationToken = default)
+        {
+            if (emails is null)
+            {
+                throw new ArgumentNullException(nameof(emails));
+            }
+            var body = new ValidateRequest { Emails = emails.ToList() };
+            var response = await _client
+                .RequestAsync<ValidateResponse>(HttpMethod.Post, "/send/emails/validate", body, null, cancellationToken)
+                .ConfigureAwait(false);
+            return response.Data;
+        }
+
         private sealed class BatchRequest
         {
             [JsonPropertyName("emails")]
@@ -67,6 +88,18 @@ namespace Mailhive
         {
             [JsonPropertyName("data")]
             public List<AcceptedEmail> Data { get; set; } = new List<AcceptedEmail>();
+        }
+
+        private sealed class ValidateRequest
+        {
+            [JsonPropertyName("emails")]
+            public List<string> Emails { get; set; } = new List<string>();
+        }
+
+        private sealed class ValidateResponse
+        {
+            [JsonPropertyName("data")]
+            public List<RecipientVerdict> Data { get; set; } = new List<RecipientVerdict>();
         }
     }
 }

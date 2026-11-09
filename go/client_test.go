@@ -23,7 +23,7 @@ func TestReadsKeyAndBaseURLFromTheEnvironment(t *testing.T) {
 	var auth atomic.Value
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth.Store(r.Header.Get("Authorization") + " " + r.URL.Path)
-		_, _ = io.WriteString(w, `{"id":"msg_1","status":"queued","suppressed":[],"test":true}`)
+		_, _ = io.WriteString(w, `{"id":"msg_1","status":"queued","suppressed":[],"rejected":{},"test":true}`)
 	}))
 	defer server.Close()
 	t.Setenv("MAILHIVE_API_KEY", "mhs_test_env")
@@ -107,7 +107,7 @@ func TestEncodesAttachmentsAndRecipients(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		header = r.Header
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		_, _ = io.WriteString(w, `{"id":"msg_1","status":"queued","suppressed":[],"test":false}`)
+		_, _ = io.WriteString(w, `{"id":"msg_1","status":"queued","suppressed":[],"rejected":{},"test":false}`)
 	}))
 	defer server.Close()
 	client, _ := mailhive.New(mailhive.WithAPIKey("mhs_x"), mailhive.WithBaseURL(server.URL))
@@ -287,5 +287,36 @@ func TestGetEscapesTheID(t *testing.T) {
 	}
 	if path != "/send/emails/a%2Fb%20c" || email.Status != "sent" {
 		t.Fatalf("path = %s, email = %+v", path, email)
+	}
+}
+
+func TestValidatePostsTheAddressesAndUnwrapsTheVerdicts(t *testing.T) {
+	var path string
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path = r.Method + " " + r.URL.Path
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		_, _ = io.WriteString(w, `{"data":[{"email":"ada@gmial.com","normalized":"ada@gmial.com","valid":false,"reason":"domain_typo","message":"The domain looks mistyped.","suggestion":"ada@gmail.com"},{"email":"Ada <ada@example.com>","normalized":"ada@example.com","valid":true,"reason":null,"message":null,"suggestion":null}]}`)
+	}))
+	defer server.Close()
+	client, _ := mailhive.New(mailhive.WithAPIKey("mhs_x"), mailhive.WithBaseURL(server.URL))
+	verdicts, err := client.Emails.Validate(context.Background(), []string{"ada@gmial.com", "Ada <ada@example.com>"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if path != "POST /send/emails/validate" {
+		t.Fatalf("path = %q", path)
+	}
+	if got := fmt.Sprint(body["emails"]); got != "[ada@gmial.com Ada <ada@example.com>]" {
+		t.Fatalf("emails = %s", got)
+	}
+	if len(verdicts) != 2 || verdicts[0].Valid || verdicts[0].Reason != "domain_typo" || verdicts[0].Suggestion != "ada@gmail.com" {
+		t.Fatalf("verdicts = %+v", verdicts)
+	}
+	if !verdicts[1].Valid || verdicts[1].Normalized != "ada@example.com" || verdicts[1].Reason != "" {
+		t.Fatalf("verdicts[1] = %+v", verdicts[1])
+	}
+	if _, err := client.Emails.Validate(context.Background(), nil); err == nil {
+		t.Fatal("expected an error for no addresses")
 	}
 }

@@ -25,6 +25,7 @@ class ConformanceTest < Minitest::Test
     when "emails.send" then client.emails.send(email, idempotency_key: key)
     when "emails.sendBatch" then client.emails.send_batch([email, email], idempotency_key: key)
     when "emails.get" then client.emails.get(test_case["id"])
+    when "emails.validate" then client.emails.validate(test_case["emails"])
     else raise "Unknown call #{test_case["call"]}"
     end
   end
