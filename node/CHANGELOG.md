@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-11-09)
 
 - `rejected` on accepted and retrieved emails: addresses dropped before sending because they can't work (a mistyped, non-existent or mail-less domain), keyed by address with the reason. They never reach the sending engine, so they can't bounce.
 - `emails.validate` runs the same checks for a form, before sending: syntax, mistyped domains with a suggestion (`ada@gmail.com` for `ada@gmial.com`), domains that don't exist or have no mail server, and your suppression list. Nothing is sent or stored.
