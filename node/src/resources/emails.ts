@@ -1,5 +1,5 @@
 import type { Mailhive } from "../client.js";
-import type { AcceptedEmail, Attachment, Email, RequestOptions, SendEmailRequest } from "../types.js";
+import type { AcceptedEmail, Attachment, Email, RecipientVerdict, RequestOptions, SendEmailRequest } from "../types.js";
 
 function toBase64(bytes: Uint8Array): string {
   if (typeof Buffer !== "undefined") return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).toString("base64");
@@ -41,5 +41,17 @@ export class Emails {
   /** An email and its current status. */
   get(id: string, options: Pick<RequestOptions, "signal"> = {}): Promise<Email> {
     return this.client.request<Email>("GET", `/send/emails/${encodeURIComponent(id)}`, options);
+  }
+
+  /** The checks sending applies, for a form to run while the person can
+   * still fix a typo: syntax, mistyped domains (with a suggestion),
+   * domains that don't exist or have no mail server, and your suppression
+   * list. Up to 100 addresses; nothing is sent or stored. */
+  async validate(emails: string[], options: Pick<RequestOptions, "signal"> = {}): Promise<RecipientVerdict[]> {
+    const response = await this.client.request<{ data: RecipientVerdict[] }>("POST", "/send/emails/validate", {
+      body: { emails },
+      ...options,
+    });
+    return response.data;
   }
 }

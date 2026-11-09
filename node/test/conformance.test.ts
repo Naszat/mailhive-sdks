@@ -18,8 +18,9 @@ import {
 interface Case {
   name: string;
   key: string;
-  call: "emails.send" | "emails.sendBatch" | "emails.get";
+  call: "emails.send" | "emails.sendBatch" | "emails.get" | "emails.validate";
   id?: string;
+  emails?: string[];
   idempotencyKey?: string;
   expect: Record<string, any>;
 }
@@ -59,6 +60,7 @@ function run(client: Mailhive, testCase: Case) {
   const options = testCase.idempotencyKey ? { idempotencyKey: testCase.idempotencyKey } : {};
   if (testCase.call === "emails.send") return client.emails.send(email, options);
   if (testCase.call === "emails.sendBatch") return client.emails.sendBatch([email, email], options);
+  if (testCase.call === "emails.validate") return client.emails.validate(testCase.emails!);
   return client.emails.get(testCase.id!);
 }
 

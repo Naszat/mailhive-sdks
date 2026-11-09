@@ -37,11 +37,35 @@ export interface RequestOptions {
   signal?: AbortSignal;
 }
 
+/** Why an address can't be sent to. `suppressed` only comes from `emails.validate`. */
+export type RecipientVerdictReason = "invalid_syntax" | "domain_typo" | "domain_not_found" | "no_mail_server" | "suppressed";
+
+/** One address checked by `emails.validate`. */
+export interface RecipientVerdict {
+  /** The address as given. */
+  email: string;
+  /** The bare, lowercased address, or null when there isn't one. */
+  normalized: string | null;
+  /** False when sending to this address would be refused. */
+  valid: boolean;
+  /** Why it's invalid; null when valid. */
+  reason: RecipientVerdictReason | null;
+  /** The reason in plain words, fit to show the person typing the address. */
+  message: string | null;
+  /** For `domain_typo`, the address that was probably meant (ada@gmail.com for ada@gmial.com). */
+  suggestion: string | null;
+}
+
 export interface AcceptedEmail {
   id: string;
+  /** `suppressed` when no recipient was left after the suppression list and the recipient checks. */
   status: "queued" | "suppressed";
   /** Recipients dropped because they're on the suppression list. */
   suppressed: string[];
+  /** Recipients dropped before sending because the address can't work (a mistyped,
+   * non-existent or mail-less domain), keyed by address → reason. They never
+   * reach the sending engine, so they can't bounce. `{}` when none. */
+  rejected: Record<string, string>;
   /** True when sent with a test key (`mhs_test_…`): delivery is simulated. */
   test: boolean;
 }
@@ -67,6 +91,8 @@ export interface Email {
   bcc: string[];
   subject: string;
   suppressed: string[];
+  /** Recipients dropped before sending because the address can't work, keyed by address → reason. */
+  rejected: Record<string, string>;
   tags: Record<string, string>;
   template_id: string | null;
   template_version: number | null;

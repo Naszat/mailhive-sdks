@@ -16,7 +16,7 @@ describe("Mailhive client", () => {
   it("reads the key and base URL from the environment", async () => {
     vi.stubEnv("MAILHIVE_API_KEY", "mhs_fromenv");
     vi.stubEnv("MAILHIVE_BASE_URL", "https://api-beta.mailhive.africa/v1/");
-    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, { id: "m1", status: "queued", suppressed: [], test: false }));
+    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, { id: "m1", status: "queued", suppressed: [], rejected: {}, test: false }));
     await new Mailhive({ fetch }).emails.send({ from: "a@acme.com", to: "b@example.com", subject: "s", text: "t" });
     const [url, init] = fetch.mock.calls[0]!;
     expect(url).toBe("https://api-beta.mailhive.africa/v1/send/emails");
@@ -40,7 +40,7 @@ describe("Mailhive client", () => {
   });
 
   it("base64-encodes byte attachments", async () => {
-    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, { id: "m1", status: "queued", suppressed: [], test: false }));
+    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, { id: "m1", status: "queued", suppressed: [], rejected: {}, test: false }));
     await new Mailhive("mhs_x", { fetch }).emails.send({
       from: "a@acme.com",
       to: "b@example.com",
@@ -50,6 +50,19 @@ describe("Mailhive client", () => {
     });
     const body = JSON.parse(fetch.mock.calls[0]![1].body);
     expect(body.attachments.map((a: { content: string }) => a.content)).toEqual(["aGVsbG8=", "aGk="]);
+  });
+
+  it("checks addresses without sending", async () => {
+    const verdicts = [
+      { email: "ada@gmial.com", normalized: "ada@gmial.com", valid: false, reason: "domain_typo", message: "The domain looks mistyped.", suggestion: "ada@gmail.com" },
+    ];
+    const fetch = vi.fn().mockResolvedValue(jsonResponse(200, { data: verdicts }));
+    const result = await new Mailhive("mhs_x", { fetch }).emails.validate(["ada@gmial.com"]);
+    const [url, init] = fetch.mock.calls[0]!;
+    expect(url).toBe("https://api.mailhive.africa/v1/send/emails/validate");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ emails: ["ada@gmial.com"] });
+    expect(result).toEqual(verdicts);
   });
 
   it("gives up on a Retry-After longer than a minute instead of hanging", async () => {

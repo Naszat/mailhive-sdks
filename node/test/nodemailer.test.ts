@@ -3,7 +3,15 @@ import { describe, expect, it, vi } from "vitest";
 import { Mailhive, ValidationError } from "../src/index.js";
 import { mailhiveTransport } from "../src/nodemailer.js";
 
-function setup(response: Response = Response.json({ id: "m1", status: "queued", suppressed: ["gone@example.com"], test: false })) {
+function setup(
+  response: Response = Response.json({
+    id: "m1",
+    status: "queued",
+    suppressed: ["gone@example.com"],
+    rejected: { "typo@gmial.com": "domain_typo" },
+    test: false,
+  }),
+) {
   const fetch = vi.fn().mockResolvedValue(response);
   const transporter = nodemailer.createTransport(mailhiveTransport({ client: new Mailhive("mhs_x", { fetch }) }));
   return { fetch, transporter };
@@ -14,7 +22,7 @@ describe("Nodemailer transport", () => {
     const { fetch, transporter } = setup();
     const info = await transporter.sendMail({
       from: { name: "Acme, Inc", address: "hello@acme.com" },
-      to: ["ada@example.com", "gone@example.com"],
+      to: ["ada@example.com", "gone@example.com", "Typo@gmial.com"],
       cc: "Grace <grace@example.com>",
       replyTo: "support@acme.com",
       subject: "Your receipt",
@@ -34,7 +42,7 @@ describe("Nodemailer transport", () => {
     expect(init.headers["Idempotency-Key"]).toBe("order-1042");
     expect(JSON.parse(init.body)).toEqual({
       from: '"Acme, Inc" <hello@acme.com>',
-      to: ["ada@example.com", "gone@example.com"],
+      to: ["ada@example.com", "gone@example.com", "Typo@gmial.com"],
       cc: ['"Grace" <grace@example.com>'],
       reply_to: ["support@acme.com"],
       subject: "Your receipt",
@@ -49,7 +57,8 @@ describe("Nodemailer transport", () => {
     });
     expect(info.messageId).toBe("m1");
     expect(info.accepted).toEqual(["ada@example.com", "grace@example.com"]);
-    expect(info.rejected).toEqual(["gone@example.com"]);
+    expect(info.rejected).toEqual(["gone@example.com", "Typo@gmial.com"]);
+    expect(info.rejectedReasons).toEqual({ "typo@gmial.com": "domain_typo" });
   });
 
   it("passes API errors to sendMail", async () => {
