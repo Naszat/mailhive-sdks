@@ -110,11 +110,12 @@ func loadSpec(t *testing.T, name string, out any) {
 }
 
 type conformanceCase struct {
-	Name           string `json:"name"`
-	Key            string `json:"key"`
-	Call           string `json:"call"`
-	ID             string `json:"id"`
-	IdempotencyKey string `json:"idempotencyKey"`
+	Name           string   `json:"name"`
+	Key            string   `json:"key"`
+	Call           string   `json:"call"`
+	ID             string   `json:"id"`
+	IdempotencyKey string   `json:"idempotencyKey"`
+	Emails         []string `json:"emails"`
 	Expect         struct {
 		Attempts           int                        `json:"attempts"`
 		Result             json.RawMessage            `json:"result"`
@@ -219,6 +220,8 @@ func TestConformance(t *testing.T) {
 				result, err = client.Emails.SendBatch(ctx, []mailhive.SendEmailParams{email, email}, opts...)
 			case "emails.get":
 				result, err = client.Emails.Get(ctx, c.ID)
+			case "emails.validate":
+				result, err = client.Emails.Validate(ctx, c.Emails)
 			default:
 				t.Fatalf("unknown call %q", c.Call)
 			}

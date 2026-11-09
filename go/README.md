@@ -48,6 +48,15 @@ email, err := client.Emails.Get(ctx, id)                                        
 
 A `Client` is safe for concurrent use: create one and share it.
 
+### Check addresses before sending
+
+```go
+verdicts, err := client.Emails.Validate(ctx, []string{"ada@gmial.com"})
+// verdicts[0].Valid == false, Reason "domain_typo", Suggestion "ada@gmail.com", Message "The domain looks mistyped."
+```
+
+The same checks run on every send: an address that can't work is left out of the email and listed in the result's `Rejected`, mapped to the reason, so it never bounces.
+
 ## Audiences and contacts
 
 With an API key that has **Full access**, keep an audience in step with your app or CRM:
