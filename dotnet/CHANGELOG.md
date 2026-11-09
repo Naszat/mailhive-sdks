@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 (unreleased)
+
+- `Rejected` on accepted and retrieved emails: addresses dropped before sending because they can't work (a mistyped domain such as gmial.com, a domain that doesn't exist, or one with no mail server), keyed by address with the reason. They never reach the sending engine, so they can't bounce.
+- `Emails.ValidateAsync` runs the same checks on addresses typed into a form, before anything is sent: syntax, mistyped domains (with the address probably meant as `Suggestion`), domains that don't exist or accept no email, and your suppression list. Nothing is sent or stored.
+
 ## 0.2.0 (2026-10-26)
 
 - Audiences and contacts, for API keys with Full access: `Audiences.ListAsync`, `CreateAsync` and `RenameAsync`; `Contacts.ListAsync`, `AddAsync`, `UpsertAsync`, `UpsertBatchAsync`, `GetAsync`, `UpdateAsync`, `UnsubscribeAsync` and `DeleteAsync`.

@@ -7,7 +7,7 @@ namespace Mailhive.Tests;
 
 public sealed class ClientTests
 {
-    private static readonly object Accepted = new { id = "m1", status = "queued", suppressed = Array.Empty<string>(), test = false };
+    private static readonly object Accepted = new { id = "m1", status = "queued", suppressed = Array.Empty<string>(), rejected = new Dictionary<string, string>(), test = false };
 
     private static SendEmailRequest Email() => new() { From = "a@acme.com", To = "b@example.com", Subject = "s", Text = "t" };
 
@@ -23,6 +23,33 @@ public sealed class ClientTests
 
     private static (MailhiveClient Client, FakeHandler Handler) ClientWith(Func<HttpRequestMessage, HttpResponseMessage> respond, MailhiveOptions? options = null) =>
         ClientWith((request, _) => Task.FromResult(respond(request)), options);
+
+    [Fact]
+    public async Task ValidatePostsTheAddressesAndUnwrapsTheVerdicts()
+    {
+        var (client, handler) = ClientWith(_ => FakeHandler.Json(200, new
+        {
+            data = new object[]
+            {
+                new { email = "Ada <ada@example.com>", normalized = "ada@example.com", valid = true, reason = (string?)null, message = (string?)null, suggestion = (string?)null },
+                new { email = "ada@gmial.com", normalized = "ada@gmial.com", valid = false, reason = "domain_typo", message = "The domain looks mistyped.", suggestion = "ada@gmail.com" },
+            },
+        }));
+
+        var verdicts = await client.Emails.ValidateAsync(new[] { "Ada <ada@example.com>", "ada@gmial.com" });
+
+        var (request, body) = handler.Requests.Single();
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.EndsWith("/send/emails/validate", request.RequestUri!.ToString());
+        Assert.Equal("""{"emails":["Ada <ada@example.com>","ada@gmial.com"]}""", body);
+        Assert.Equal(2, verdicts.Count);
+        Assert.True(verdicts[0].Valid);
+        Assert.Null(verdicts[0].Reason);
+        Assert.False(verdicts[1].Valid);
+        Assert.Equal("domain_typo", verdicts[1].Reason);
+        Assert.Equal("ada@gmail.com", verdicts[1].Suggestion);
+        Assert.Equal("The domain looks mistyped.", verdicts[1].Message);
+    }
 
     [Fact]
     public async Task ReadsTheKeyAndBaseUrlFromTheEnvironment()

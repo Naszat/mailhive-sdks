@@ -145,6 +145,8 @@ public sealed class ConformanceTests : IClassFixture<MockServerFixture>
             "emails.send" => await client.Emails.SendAsync(email, options),
             "emails.sendBatch" => await client.Emails.SendBatchAsync(new[] { email, email }, options),
             "emails.get" => await client.Emails.GetAsync(testCase.GetProperty("id").GetString()!),
+            "emails.validate" => await client.Emails.ValidateAsync(
+                testCase.GetProperty("emails").EnumerateArray().Select(e => e.GetString()!).ToArray()),
             var call => throw new InvalidOperationException("Unknown call " + call),
         };
     }

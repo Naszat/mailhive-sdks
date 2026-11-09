@@ -113,7 +113,7 @@ namespace Mailhive
         [JsonPropertyName("id")]
         public string Id { get; set; } = string.Empty;
 
-        /// <summary><c>queued</c>, or <c>suppressed</c> when every recipient was on the suppression list.</summary>
+        /// <summary><c>queued</c>, or <c>suppressed</c> when no recipient was left after the suppression list and the recipient checks.</summary>
         [JsonPropertyName("status")]
         public string Status { get; set; } = string.Empty;
 
@@ -121,9 +121,41 @@ namespace Mailhive
         [JsonPropertyName("suppressed")]
         public IReadOnlyList<string> Suppressed { get; set; } = Array.Empty<string>();
 
+        /// <summary>Recipients dropped before sending because the address can't work, keyed by address: <c>invalid_syntax</c>, <c>domain_typo</c> (gmial.com), <c>domain_not_found</c> or <c>no_mail_server</c>. They never reach the sending engine, so they can't bounce.</summary>
+        [JsonPropertyName("rejected")]
+        public IReadOnlyDictionary<string, string> Rejected { get; set; } = new Dictionary<string, string>();
+
         /// <summary>True when sent with a test key (<c>mhs_test_…</c>): delivery is simulated and nothing is billed.</summary>
         [JsonPropertyName("test")]
         public bool Test { get; set; }
+    }
+
+    /// <summary>What <see cref="EmailsResource.ValidateAsync"/> found for one address.</summary>
+    public sealed class RecipientVerdict
+    {
+        /// <summary>The address as given.</summary>
+        [JsonPropertyName("email")]
+        public string Email { get; set; } = string.Empty;
+
+        /// <summary>The bare, lowercased address, or <c>null</c> when there isn't one.</summary>
+        [JsonPropertyName("normalized")]
+        public string? Normalized { get; set; }
+
+        /// <summary>False when sending to this address would be refused.</summary>
+        [JsonPropertyName("valid")]
+        public bool Valid { get; set; }
+
+        /// <summary>Why it's invalid: <c>invalid_syntax</c>, <c>domain_typo</c>, <c>domain_not_found</c>, <c>no_mail_server</c> or <c>suppressed</c> (on your suppression list). <c>null</c> when valid.</summary>
+        [JsonPropertyName("reason")]
+        public string? Reason { get; set; }
+
+        /// <summary>The reason in plain words, fit to show the person typing the address.</summary>
+        [JsonPropertyName("message")]
+        public string? Message { get; set; }
+
+        /// <summary>For <c>domain_typo</c>, the address that was probably meant (ada@gmail.com for ada@gmial.com).</summary>
+        [JsonPropertyName("suggestion")]
+        public string? Suggestion { get; set; }
     }
 
     /// <summary>An email and where it's got to.</summary>
@@ -168,6 +200,10 @@ namespace Mailhive
         /// <summary>Recipients dropped because they're on the suppression list.</summary>
         [JsonPropertyName("suppressed")]
         public IReadOnlyList<string> Suppressed { get; set; } = Array.Empty<string>();
+
+        /// <summary>Recipients dropped before sending because the address can't work, keyed by address: <c>invalid_syntax</c>, <c>domain_typo</c> (gmial.com), <c>domain_not_found</c> or <c>no_mail_server</c>. They never reach the sending engine, so they can't bounce.</summary>
+        [JsonPropertyName("rejected")]
+        public IReadOnlyDictionary<string, string> Rejected { get; set; } = new Dictionary<string, string>();
 
         /// <summary>Your labels.</summary>
         [JsonPropertyName("tags")]
